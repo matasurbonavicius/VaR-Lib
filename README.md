@@ -1,4 +1,4 @@
-# varlib — readable, validated Value at Risk
+# varlib - Value-at-risk focused lightweight library
 
 *Six VaR models · Expected Shortfall on every one · four regulatory backtests ·
 one-call reports · numpy + pandas only.*
@@ -7,7 +7,7 @@ A small Value at Risk library built on three ideas:
 
 1. **Readable.** One VaR method per file, each formula written out step by step —
    no black boxes.
-2. **Traced.** Every calculation records each intermediate it produces, so you
+2. **Traceable.** Every calculation records each intermediate it produces, so you
    can audit a number line by line (`result.steps` / `result.explain()`).
 3. **Validated.** A VaR number is only trustworthy once it's backtested. The four
    industry-standard checks are built in.

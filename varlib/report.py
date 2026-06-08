@@ -2,10 +2,10 @@
 One call, the whole backtest: roll a model, run every test, render the report.
 
 The backtest workflow has a fixed shape -- roll the model through history, count
-the breaches, run the four standard tests, then print or plot the verdict. That
+the breaches, run the standard tests, then print or plot the verdict. That
 shape was previously re-assembled by hand in every script. `BacktestReport`
 packages it: hand it a model and a price (or return) series and it does the roll
-and all four tests, then renders them to the console, a dashboard figure, or a
+and every test, then renders them to the console, a dashboard figure, or a
 PDF -- with a title and a self-describing metrics footer generated for you, so
 the default report is print-ready with no styling code at all.
 
@@ -32,12 +32,10 @@ import numpy as np
 from varlib.base import VarModel
 from varlib.backtest import (
     BreachSummary,
-    ChristoffersenResult,
     DynamicQuantileResult,
     KupiecResult,
     TrafficLightResult,
     basel_traffic_light,
-    christoffersen_test,
     count_breaches,
     dynamic_quantile_test,
     kupiec_pof_test,
@@ -71,10 +69,10 @@ def _prettify(class_name: str) -> str:
 
 @dataclass
 class BacktestReport:
-    """A rolled backtest plus its four test verdicts, ready to print or plot.
+    """A rolled backtest plus its test verdicts, ready to print or plot.
 
     Holds the aligned ``(losses, forecasts, dates)`` series from the roll, the
-    result object from each of the four standard tests, and the run parameters
+    result object from each standard test, and the run parameters
     (model, window, horizon, overlap) needed to label a report. The renderers
     (``print`` / ``dashboard`` / ``report`` / ``save``) build a title and a
     self-describing footer from these on their own -- callers pass data, not
@@ -91,7 +89,6 @@ class BacktestReport:
     dates: Sequence[Any]
     summary: BreachSummary
     kupiec: KupiecResult
-    christoffersen: ChristoffersenResult
     dynamic_quantile: DynamicQuantileResult
     traffic_light: TrafficLightResult
 
@@ -103,7 +100,7 @@ class BacktestReport:
     # -- console ------------------------------------------------------------
 
     def print(self, title: Optional[str] = None) -> None:
-        """Print the Kupiec / Christoffersen / DQ / Basel summary to stdout."""
+        """Print the Kupiec / Dynamic Quantile / Basel summary to stdout."""
         print(self.format(title))
 
     def format(self, title: Optional[str] = None) -> str:
@@ -124,8 +121,6 @@ class BacktestReport:
             f"expected {(1 - c) * 100:.2f}%)",
             f"Kupiec POF      : p = {self.kupiec.p_value:.3f} "
             f"-> {verdict(self.kupiec.reject_at_5pct)}",
-            f"Christoffersen  : p = {self.christoffersen.p_value_conditional:.3f} "
-            f"-> {verdict(self.christoffersen.reject_conditional)}",
             f"Dynamic Quantile: p = {self.dynamic_quantile.p_value:.3f} "
             f"-> {verdict(self.dynamic_quantile.reject)}",
             f"Basel zone      : {self.traffic_light.zone.upper()} "
@@ -159,7 +154,7 @@ class BacktestReport:
         """
         ok = lambda reject: "OK" if not reject else "REJECT"  # noqa: E731
         s, k = self.summary, self.kupiec
-        ch, dq, light = self.christoffersen, self.dynamic_quantile, self.traffic_light
+        dq, light = self.dynamic_quantile, self.traffic_light
         scheme = "overlapping" if self.overlap else "non-overlapping"
         span = self._date_span()
 
@@ -181,7 +176,6 @@ class BacktestReport:
              f"Basel zone {light.zone.upper()}"),
             ("Tests",
              f"Kupiec POF {ok(k.reject_at_5pct)} (p={k.p_value:.3f})  ·  "
-             f"Christoffersen {ok(ch.reject_conditional)} (p={ch.p_value_conditional:.3f})  ·  "
              f"Dynamic Quantile {ok(dq.reject)} (p={dq.p_value:.3f}){bias_note}"),
         ]
 
@@ -223,7 +217,7 @@ class BacktestReport:
         """A selective, possibly multi-page report (Figure or list of Figures).
 
         Title/subtitle/footer default to this report's own; the ``"tests"`` panel
-        uses its four verdicts. Extra keyword arguments are forwarded to
+        uses its verdicts. Extra keyword arguments are forwarded to
         ``varlib.plotting.build_report``.
         """
         from varlib.plotting import build_report
@@ -236,10 +230,9 @@ class BacktestReport:
 
     @property
     def backtests(self) -> dict:
-        """The four results keyed for ``build_report``'s ``backtests`` argument."""
+        """The test results keyed for ``build_report``'s ``backtests`` argument."""
         return {
             "kupiec": self.kupiec,
-            "christoffersen": self.christoffersen,
             "dynamic_quantile": self.dynamic_quantile,
             "traffic_light": self.traffic_light,
         }
@@ -307,7 +300,6 @@ def run_backtest(
         dates=step_dates,
         summary=summary,
         kupiec=kupiec_pof_test(flags, confidence),
-        christoffersen=christoffersen_test(flags, confidence),
         dynamic_quantile=dynamic_quantile_test(
             flags, confidence, var_forecasts=forecasts
         ),

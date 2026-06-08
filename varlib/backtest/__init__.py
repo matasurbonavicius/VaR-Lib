@@ -14,9 +14,9 @@ The standard workflow on a single instrument (``rolling_backtest`` does steps
      forecast VaR.
   4. Run statistical tests on the breach sequence:
        - Kupiec POF:     are there roughly the right NUMBER of breaches?
-       - Christoffersen: are the breaches INDEPENDENT, or do they cluster?
        - Dynamic Quantile: can the breaches be PREDICTED from their own past or
-                         the VaR level? (Engle-Manganelli, the modern test.)
+                         the VaR level? (Engle-Manganelli -- the modern test of
+                         independence and correct coverage together.)
        - Traffic light:  Basel's supervisory green/yellow/red zoning.
 
 Every test returns a small, named result object so the verdict and the numbers
@@ -25,7 +25,6 @@ behind it are both visible.
 
 from varlib.backtest.rolling import rolling_var, rolling_backtest
 from varlib.backtest.kupiec import KupiecResult, kupiec_pof_test
-from varlib.backtest.christoffersen import ChristoffersenResult, christoffersen_test
 from varlib.backtest.dynamic_quantile import (
     DynamicQuantileResult,
     dynamic_quantile_test,
@@ -43,8 +42,6 @@ __all__ = [
     "rolling_backtest",
     "KupiecResult",
     "kupiec_pof_test",
-    "ChristoffersenResult",
-    "christoffersen_test",
     "DynamicQuantileResult",
     "dynamic_quantile_test",
     "BreachSummary",
