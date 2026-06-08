@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Generated charts (reproducible via the examples/ scripts)
+examples/output/*.png
+# ...except the dashboard, which the README embeds.
+!examples/output/dashboard_historical.png
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local tooling / internal notes (not part of the public release)
+.claude/
+PLAN_extensions.md
