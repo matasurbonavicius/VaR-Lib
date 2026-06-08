@@ -8,6 +8,7 @@ matplotlib Axes, so charts compose and can be saved or embedded freely:
     breach_timeline       A timeline of breach days, to reveal clustering.
     traffic_light_chart   Basel green/yellow/red zones with the breach count.
     distribution_chart    Return histogram with VaR and ES lines overlaid.
+    paths_chart           Simulated paths + their terminal distribution and VaR.
     dq_chart              Dynamic Quantile: which terms make breaches predictable.
     backtest_panel        Every backtest verdict as one clean table.
 
@@ -20,6 +21,7 @@ from varlib.plotting.breaches import breaches_chart
 from varlib.plotting.breach_timeline import breach_timeline
 from varlib.plotting.traffic_light_chart import traffic_light_chart
 from varlib.plotting.distribution_chart import distribution_chart
+from varlib.plotting.paths_chart import paths_chart
 from varlib.plotting.dq_chart import dq_chart
 from varlib.plotting.backtest_panel import backtest_panel
 from varlib.plotting.dashboard import backtest_dashboard
@@ -30,6 +32,7 @@ __all__ = [
     "breach_timeline",
     "traffic_light_chart",
     "distribution_chart",
+    "paths_chart",
     "dq_chart",
     "backtest_panel",
     "backtest_dashboard",

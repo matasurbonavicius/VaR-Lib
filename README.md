@@ -12,9 +12,6 @@ A small Value at Risk library built on three ideas:
 3. **Validated.** A VaR number is only trustworthy once it's backtested. The four
    industry-standard checks are built in.
 
-> The premise: in a bank, a *documented and validated* Historical VaR beats a
-> fancy model nobody can inspect. This library is built for that reality.
-
 ---
 
 ## In one picture
@@ -121,6 +118,23 @@ holding period — the h-day VaR is the quantile of the h-day loss distribution,
 not a one-day figure scaled by √h (which is plainly wrong for mean-reverting
 series, where the variance should saturate).
 
+### Inspecting the internals
+
+The simulation models don't read a quantile off the data — they *build* the
+h-day loss distribution by generating thousands of price paths. Because every
+intermediate is traced, you can pull those paths out and look at them. Here are
+10,000 21-day paths per model, with the distribution of where they end up — the
+exact loss tail the VaR is read from — attached on the right
+(`examples/charts/paths.py`):
+
+![Simulated paths and the loss tail they form](examples/output/paths.png)
+
+The paths fan out, pile up into the terminal distribution, and the VaR is the
+crimson line in its loss tail. The jump-diffusion tails (top) reach further than
+the bootstrap's (bottom) — the rare Merton jumps at work. Nothing here is a black
+box: it's the model's own intermediate data, the same `result.steps` you can
+audit on any single run.
+
 ## The backtests
 
 Under `varlib/backtest/`. `run_backtest` runs all three; you can also call them
@@ -148,6 +162,7 @@ one line that builds it.
 python examples/single_instrument.py        # every model + a backtest, console
 python examples/full_backtest.py            # the dashboard page above (PNG + PDF)
 python examples/charts/breaches.py          # each chart on its own
+python examples/charts/paths.py             # the simulated-paths picture above
 ```
 
 ## Design notes

@@ -163,11 +163,9 @@ def ewma_var_es(
     horizon = int(horizon)
     n = returns.size
     if n < 2:
-        raise ValueError("Need at least two returns for an EWMA volatility.")
+        raise ValueError("Need at least two returns for an EWMA volatility. But really, a lot more than two for a meaningful estimate.")
 
-    # Step 1: the drift (estimate or accept). RiskMetrics sets this to zero
-    # (p.80); we default to the sample mean for cross-model consistency -- a
-    # DEPARTURE from the document. Usually negligible at daily scale.
+    # Step 1: the drift
     if mu is None:
         mu = float(np.mean(returns))
         steps["mu_source"] = "estimated"
@@ -179,13 +177,11 @@ def ewma_var_es(
 
     # Step 2: iterate the EWMA variance recursion, Eq. [5.3], p.81:
     #     sigma**2_{t+1|t} = lambda * sigma**2_{t|t-1} + (1 - lambda) * r_t**2
-    # The document derives this assuming an infinite history and a zero mean, so
-    # its input is the raw squared return. Two DEPARTURES here, both noted in the
-    # module docstring: (a) we feed squared deviations from the mean rather than
-    # raw squares, and (b) we must seed the recursion -- the document, assuming
-    # infinite data, never does. We seed with the plain sample variance so the
-    # early estimate is reasonable; its influence decays as lambda**n. The final
-    # value is the conditional variance for the NEXT period -- the forecast.
+    # The document derives this assuming an infinite history and a zero mean. 
+    # Two DEPARTURES here, both noted in the module docstring: (a) we feed squared 
+    # deviations from the mean rather than raw squares, and (b) we must seed the recursion 
+    # -- the document, assuming infinite data, never does. We seed with the plain 
+    # sample variance so the early estimate is reasonable;
     deviations = returns - mu
     sq = deviations * deviations
     sigma2 = float(np.var(returns, ddof=0))      # seed (not in the document)
