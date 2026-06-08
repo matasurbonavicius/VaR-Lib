@@ -115,16 +115,3 @@ def save(fig, filename: str) -> str:
     fig.savefig(path, dpi=120, bbox_inches="tight")
     print(f"Saved {path}")
     return path
-
-
-def save_page(fig, filename: str) -> str:
-    """Save a fixed-page figure (e.g. A4) into examples/output/.
-
-    Unlike `save`, this does NOT crop to a tight bounding box -- the whole page,
-    including the margins the layout reserved, is preserved. The format follows
-    the file extension, so the same figure can be written as both .pdf and .png.
-    """
-    path = os.path.join(ensure_output_dir(), filename)
-    fig.savefig(path, dpi=200)
-    print(f"Saved {path}")
-    return path

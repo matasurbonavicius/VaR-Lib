@@ -27,6 +27,7 @@ dict_keys(['returns', 'losses', 'sorted_losses', 'var', 'es', ...])
 
 from varlib.base import VarModel, VarResult
 from varlib.backtest.rolling import rolling_var, rolling_backtest
+from varlib.report import BacktestReport, run_backtest
 from varlib.models.historical import HistoricalVar, historical_var, historical_es
 from varlib.models.historical_bootstrap import (
     HistoricalBootstrapVar,
@@ -59,6 +60,8 @@ __all__ = [
     "VarResult",
     "rolling_var",
     "rolling_backtest",
+    "BacktestReport",
+    "run_backtest",
     "HistoricalVar",
     "historical_var",
     "historical_es",
