@@ -3,17 +3,10 @@
 Runnable examples on real data — daily AAPL prices, 2020–2024, committed in
 `data/AAPL.csv`, so everything runs offline.
 
-## Choosing a model
-
-Every charting example takes the same two flags:
-
-| Flag           | Values                                          | Default      |
-|----------------|-------------------------------------------------|--------------|
-| `--model`      | `historical`, `bootstrap`, `brownian`, `ou`, `jump`, `ewma` | `historical` |
-| `--confidence` | a level in (0, 1), e.g. `0.99`, `0.975`         | `0.99`       |
-
-Generated PNGs are written to `output/` (created on first run), named by model,
-e.g. `output/breaches_brownian.png`.
+Each script is self-contained and takes no arguments: it loads the prices and
+calls the library directly, so you can read any one top to bottom. To try a
+different model, change the one line that builds it. Output PNGs/PDFs are written
+to `output/` (created on first run).
 
 ## The full backtest
 
@@ -42,10 +35,10 @@ isolation:
 | `charts/distribution.py`     | Return histogram with the VaR and ES lines.      |
 
 ```bash
-python examples/charts/breaches.py      --model brownian
-python examples/charts/timeline.py      --model ou
-python examples/charts/traffic_light.py --model jump
-python examples/charts/distribution.py  --model historical
+python examples/charts/breaches.py
+python examples/charts/timeline.py
+python examples/charts/traffic_light.py
+python examples/charts/distribution.py
 ```
 
 ## Console-only

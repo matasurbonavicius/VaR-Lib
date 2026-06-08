@@ -6,25 +6,27 @@ Writes examples/output/dashboard_historical.png and .pdf.
 """
 
 import os
-import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pandas as pd
 
-from _common import ensure_output_dir, load_prices  # noqa: E402
-from varlib import HistoricalVar, run_backtest  # noqa: E402
+from varlib import HistoricalVar, run_backtest
+
+HERE = os.path.dirname(__file__)
+DATA = os.path.join(HERE, "data", "AAPL.csv")
+OUTPUT = os.path.join(HERE, "output")
 
 
 def main():
-    prices = load_prices()
-    out = ensure_output_dir()
+    prices = pd.read_csv(DATA, parse_dates=["Date"], index_col="Date")["AAPL"].dropna()
+    os.makedirs(OUTPUT, exist_ok=True)
 
     # One call does the roll and all four tests.
     report = run_backtest(HistoricalVar(confidence=0.99), prices=prices, window=250)
     report.print()
 
     # One polished page, titled and footed automatically -- just give it a path.
-    written = report.save(os.path.join(out, "dashboard_historical.png"))
-    written += report.save(os.path.join(out, "dashboard_historical.pdf"))
+    written = report.save(os.path.join(OUTPUT, "dashboard_historical.png"))
+    written += report.save(os.path.join(OUTPUT, "dashboard_historical.pdf"))
 
     print()
     for path in written:

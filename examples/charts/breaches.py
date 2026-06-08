@@ -2,36 +2,38 @@
 Single chart: VaR forecast vs realised loss, with breaches marked.
 
 This is the chart a risk committee looks at first. Run it on its own to see
-just this plot for the model you choose.
+just this plot.
 
-    python examples/charts/breaches.py --model historical
-    python examples/charts/breaches.py --model brownian
+    python examples/charts/breaches.py
 
-Writes examples/output/breaches_<model>.png
+Writes examples/output/breaches_historical.png. To try another model, change
+the one line that builds it.
 """
 
 import os
-import sys
 
-# Allow running this file directly: make examples/ importable for _common.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import matplotlib.pyplot as plt
+import pandas as pd
 
-from _common import load_prices, make_model, parse_args, roll_backtest, save  # noqa: E402
-from varlib.plotting import breaches_chart  # noqa: E402
-from varlib.plotting._style import get_pyplot  # noqa: E402
+from varlib import HistoricalVar
+from varlib.backtest import rolling_backtest
+from varlib.plotting import breaches_chart
+
+HERE = os.path.dirname(os.path.dirname(__file__))
+DATA = os.path.join(HERE, "data", "AAPL.csv")
+OUTPUT = os.path.join(HERE, "output")
 
 
 def main():
-    args = parse_args(__doc__)
-    plt = get_pyplot()
+    prices = pd.read_csv(DATA, parse_dates=["Date"], index_col="Date")["AAPL"].dropna()
+    os.makedirs(OUTPUT, exist_ok=True)
 
-    prices = load_prices()
-    model = make_model(args.model, args.confidence)
-    losses, forecasts, dates = roll_backtest(prices, model)
+    model = HistoricalVar(confidence=0.99)
+    losses, forecasts, dates = rolling_backtest(model, prices=prices, window=250)
 
     fig, ax = plt.subplots(figsize=(11, 4.5))
-    breaches_chart(losses, forecasts, dates, args.confidence, ax=ax)
-    save(fig, f"breaches_{args.model}.png")
+    breaches_chart(losses, forecasts, dates, 0.99, ax=ax)
+    fig.savefig(os.path.join(OUTPUT, "breaches_historical.png"), dpi=120, bbox_inches="tight")
 
 
 if __name__ == "__main__":

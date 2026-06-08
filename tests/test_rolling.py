@@ -123,6 +123,16 @@ def test_backtest_non_overlap_is_sparser():
     assert n_non == pytest.approx(n_overlap / 10, abs=2)
 
 
+def test_backtest_non_overlap_windows_are_disjoint():
+    # Consecutive non-overlapping realised losses come from disjoint day ranges,
+    # so their end-dates are exactly `horizon` business days apart -- one gap size.
+    prices = _prices()
+    model = HistoricalVar(0.99, horizon=5)
+    _, _, dates = rolling_backtest(model, prices=prices, window=250, overlap=False)
+    gaps = np.diff([d.value for d in pd.to_datetime(dates)])
+    assert len(set(gaps)) == 1
+
+
 def test_backtest_feeds_a_real_backtest():
     # End-to-end: the triple drops straight into the breach counter / Kupiec.
     from varlib.backtest import count_breaches, kupiec_pof_test

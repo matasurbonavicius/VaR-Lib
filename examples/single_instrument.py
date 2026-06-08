@@ -17,18 +17,25 @@ Every printed number is also a traced intermediate via `result.steps` /
 """
 
 import os
-import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pandas as pd
 
-from _common import MODELS, MODEL_LABELS, load_prices  # noqa: E402
-from varlib import HistoricalVar, run_backtest  # noqa: E402
+from varlib import (
+    HistoricalVar,
+    HistoricalBootstrapVar,
+    ParametricBrownianVar,
+    ParametricOuVar,
+    ParametricJumpVar,
+    EwmaVar,
+    run_backtest,
+)
 
 CONFIDENCE = 0.99
+DATA = os.path.join(os.path.dirname(__file__), "data", "AAPL.csv")
 
 
 def main():
-    prices = load_prices()
+    prices = pd.read_csv(DATA, parse_dates=["Date"], index_col="Date")["AAPL"].dropna()
 
     print("=" * 64)
     print(f"AAPL VaR  (confidence = {CONFIDENCE})")
@@ -40,10 +47,19 @@ def main():
     recent = prices.loc["2023-01-01":"2024-12-31"]
     print(f"\nVaR and ES estimated on {recent.index.min().date()} .. "
           f"{recent.index.max().date()} ({len(recent)} days):\n")
+
+    models = {
+        "Historical": HistoricalVar(CONFIDENCE),
+        "Historical bootstrap": HistoricalBootstrapVar(CONFIDENCE, n_resamples=500),
+        "Parametric Brownian": ParametricBrownianVar(CONFIDENCE),
+        "Parametric OU": ParametricOuVar(CONFIDENCE),
+        "Parametric jump": ParametricJumpVar(CONFIDENCE, n_simulations=20_000),
+        "EWMA / RiskMetrics": EwmaVar(CONFIDENCE),
+    }
     print(f"  {'Model':24s}  {'VaR':>8s}  {'ES':>8s}")
-    for name, make in MODELS.items():
-        result = make(CONFIDENCE, 1).run(prices=recent.to_numpy())
-        print(f"  {MODEL_LABELS[name]:24s}  {result.value * 100:7.3f}%  "
+    for name, model in models.items():
+        result = model.run(prices=recent.to_numpy())
+        print(f"  {name:24s}  {result.value * 100:7.3f}%  "
               f"{result.expected_shortfall * 100:7.3f}%")
 
     # ---- Backtest the Historical model over the full five-year history ------
