@@ -1,9 +1,9 @@
 """
 Chi-square upper-tail probability, computed without scipy.
 
-Both the Kupiec and Christoffersen tests produce a likelihood-ratio statistic
-that is asymptotically chi-square distributed. To turn that statistic into a
-p-value we need the chi-square survival function (1 - CDF).
+Both the Kupiec and Dynamic Quantile tests produce a statistic that is
+asymptotically chi-square distributed. To turn that statistic into a p-value we
+need the chi-square survival function (1 - CDF).
 
 We build it from the regularised upper incomplete gamma function Q(s, x), since
 for `df` degrees of freedom:

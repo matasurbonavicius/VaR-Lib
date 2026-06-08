@@ -4,9 +4,9 @@ Backtest panel -- every test verdict as one clean table.
 The individual charts show *how* a model behaves; this panel states the
 *verdicts* in one block, the way a risk report leads: each test on its own row
 with its statistic, its p-value, and a plain pass/fail. It pulls together the
-four backtests the library runs -- Kupiec POF, Christoffersen conditional
-coverage, the Engle-Manganelli Dynamic Quantile test, and the Basel traffic
-light -- so the reader sees the whole scorecard at a glance.
+backtests the library runs -- Kupiec POF, the Engle-Manganelli Dynamic Quantile
+test, and the Basel traffic light -- so the reader sees the whole scorecard at a
+glance.
 
 It takes the already-computed result objects (so it never re-runs anything) and
 draws them as a tidy, coloured table: green for a pass, red for a reject, with
@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from varlib.backtest.christoffersen import ChristoffersenResult
 from varlib.backtest.dynamic_quantile import DynamicQuantileResult
 from varlib.backtest.kupiec import KupiecResult
 from varlib.backtest.traffic_light import TrafficLightResult
@@ -26,7 +25,6 @@ from varlib.plotting._style import COLORS, get_pyplot
 
 def backtest_panel(
     kupiec: Optional[KupiecResult] = None,
-    christoffersen: Optional[ChristoffersenResult] = None,
     dynamic_quantile: Optional[DynamicQuantileResult] = None,
     traffic_light: Optional[TrafficLightResult] = None,
     title: str = "Backtest verdicts",
@@ -41,7 +39,7 @@ def backtest_panel(
 
     Parameters
     ----------
-    kupiec, christoffersen, dynamic_quantile, traffic_light
+    kupiec, dynamic_quantile, traffic_light
         The result objects from the corresponding backtests.
     title
         Heading drawn above the table.
@@ -65,16 +63,6 @@ def backtest_panel(
             f"{kupiec.n_breaches}/{kupiec.n_observations}  ·  p = {kupiec.p_value:.3f}",
             verdict,
             "red" if kupiec.reject_at_5pct else "green",
-        ))
-
-    if christoffersen is not None:
-        verdict = "REJECT" if christoffersen.reject_conditional else "PASS"
-        rows.append((
-            "Christoffersen (cc)",
-            f"LR = {christoffersen.lr_conditional:.2f}  ·  "
-            f"p = {christoffersen.p_value_conditional:.3f}",
-            verdict,
-            "red" if christoffersen.reject_conditional else "green",
         ))
 
     if dynamic_quantile is not None:

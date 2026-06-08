@@ -1,12 +1,11 @@
 """
 Dynamic Quantile test (Engle & Manganelli) -- the modern conditional-coverage test.
 
-Kupiec checks the *number* of breaches; Christoffersen adds a check that breaches
-are not serially clustered, but only through a first-order Markov chain -- it sees
-"breach yesterday -> breach today" dependence and little else. The Dynamic
-Quantile (DQ) test is the regression-based generalisation: it asks whether the
-breaches can be *predicted* from anything known the day before, including the
-VaR's own level.
+Kupiec checks only the *number* of breaches. The Dynamic Quantile (DQ) test adds
+the independence side: it asks whether the breaches can be *predicted* from
+anything known the day before -- their own recent history, or the VaR's own level
+-- so a model with the right average breach count but clustered or VaR-correlated
+breaches still fails.
 
 The idea. Define the centred breach (the "hit"):
 
@@ -24,9 +23,9 @@ The statistic (Engle-Manganelli 2004) is
     DQ = beta_hat' (X'X) beta_hat / ( q * (1 - q) ),     q = 1 - confidence,
 
 which is chi-square distributed with ``k`` degrees of freedom, ``k`` = number of
-regressors (constant + lags + VaR). Catches dependence Christoffersen misses --
-notably breaches that cluster with the VaR *level* rather than just with each
-other.
+regressors (constant + lags + VaR). It catches both serial clustering and
+breaches that track the VaR *level* -- a single regression-based test of
+independence and correct coverage together.
 """
 
 from __future__ import annotations

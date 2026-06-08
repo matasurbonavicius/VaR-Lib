@@ -1,12 +1,12 @@
 """
 Kupiec Proportion-of-Failures (POF) test -- unconditional coverage.
 
-This is the first thing any risk manager checks: did the VaR get breached about
-as often as it should have? At 99% confidence we expect a breach on about 1% of
-days. If we see far more or far fewer, the model is mis-calibrated.
+Did the VaR get breached about as often as it should have? 
+At 99% confidence we expect a breach on about 1% of days. 
+If we see far more or far fewer, the model is mis-calibrated.
 
-Kupiec turns this into a likelihood-ratio test. Under the null hypothesis the
-true breach probability equals the expected (1 - confidence). The statistic is
+Under the null hypothesis the true breach probability 
+equals the expected (1 - confidence). The statistic is
 chi-square distributed with 1 degree of freedom.
 
     LR_pof = -2 * ln[ L(p) / L(p_hat) ]

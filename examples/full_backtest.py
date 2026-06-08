@@ -20,7 +20,7 @@ def main():
     prices = pd.read_csv(DATA, parse_dates=["Date"], index_col="Date")["AAPL"].dropna()
     os.makedirs(OUTPUT, exist_ok=True)
 
-    # One call does the roll and all four tests.
+    # One call does the roll and every test.
     report = run_backtest(HistoricalVar(confidence=0.99), prices=prices, window=250)
     report.print()
 

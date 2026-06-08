@@ -10,7 +10,7 @@ The script:
   1. Loads the price series.
   2. Computes VaR and ES with every model on the most recent two years.
   3. Backtests the Historical model over the full five-year history -- one call
-     to `varlib.run_backtest`, which rolls the model and runs all four tests.
+     to `varlib.run_backtest`, which rolls the model and runs every test.
 
 Every printed number is also a traced intermediate via `result.steps` /
 `result.explain()` (per model) and a plain field on `report.kupiec`, etc.

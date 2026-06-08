@@ -1,6 +1,6 @@
 # varlib - Value-at-risk focused lightweight library
 
-*Six VaR models · Expected Shortfall on every one · four regulatory backtests ·
+*Six VaR models · Expected Shortfall on every one · three regulatory backtests ·
 one-call reports · numpy + pandas only.*
 
 A small Value at Risk library built on three ideas:
@@ -41,15 +41,13 @@ Backtest: rolling Historical VaR, full 2020-2024 history  (confidence = 99%)
   Observations    : 1007
   Breaches        : 11 (rate 1.09%, expected 1.00%)
   Kupiec POF      : p = 0.772 -> OK
-  Christoffersen  : p = 0.848 -> OK
   Dynamic Quantile: p = 0.000 -> REJECT
   Basel zone      : GREEN (green<= 15, red>= 24)
 ```
 
-The **Dynamic Quantile** test rejects where Kupiec and Christoffersen pass: the
-breach *count* is fine and the breaches aren't Markov-clustered, but they're
-still predictable from the VaR level — the dependence only the modern
-regression-based test catches. That's the case for carrying several tests.
+The **Dynamic Quantile** test rejects where Kupiec passes: the breach *count* is
+fine, but the breaches are still predictable from the VaR level — the dependence
+a count-only test can't see. That's the case for testing more than the count.
 
 ---
 
@@ -84,7 +82,7 @@ tail mean, or bootstrap).
 
 ## The whole backtest in one call
 
-`run_backtest` rolls a model through history, runs all four tests, and returns a
+`run_backtest` rolls a model through history, runs every test, and returns a
 `BacktestReport` that prints, plots, or saves itself:
 
 ```python
@@ -92,7 +90,7 @@ from varlib import HistoricalVar, run_backtest
 
 report = run_backtest(HistoricalVar(0.99), prices=prices, window=250)
 
-report.print()                 # the console summary (breaches + four tests)
+report.print()                 # the console summary (breaches + every test)
 report.save("backtest.pdf")    # a single print-ready dashboard page
 
 report.kupiec.p_value          # every result is a plain field, nothing hidden
@@ -125,14 +123,13 @@ series, where the variance should saturate).
 
 ## The backtests
 
-Under `varlib/backtest/`. `run_backtest` runs all four; you can also call them
+Under `varlib/backtest/`. `run_backtest` runs all three; you can also call them
 directly on any `(losses, forecasts)` pair:
 
 | Test                | Function                | Question                                |
 |---------------------|-------------------------|-----------------------------------------|
 | Kupiec POF          | `kupiec_pof_test`       | The right **number** of breaches?       |
-| Christoffersen      | `christoffersen_test`   | Breaches **independent**, or clustered? |
-| Dynamic Quantile    | `dynamic_quantile_test` | Breaches **predictable** (Engle-Manganelli)? |
+| Dynamic Quantile    | `dynamic_quantile_test` | Breaches **predictable** — clustered or VaR-correlated (Engle-Manganelli)? |
 | Basel traffic light | `basel_traffic_light`   | Which supervisory zone (green/yellow/red)? |
 
 The building blocks `run_backtest` composes are public too: `rolling_var` /

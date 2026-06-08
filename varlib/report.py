@@ -265,8 +265,8 @@ def run_backtest(
     """Roll ``model`` through history and run every backtest in one call.
 
     This is the headline workflow as a single function: it rolls the model
-    (``varlib.backtest.rolling_backtest``), counts the breaches, and runs all
-    four standard tests at the model's confidence level, returning a
+    (``varlib.backtest.rolling_backtest``), counts the breaches, and runs every
+    standard test at the model's confidence level, returning a
     :class:`BacktestReport` that can print, plot, or save itself.
 
     Parameters

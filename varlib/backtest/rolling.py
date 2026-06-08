@@ -14,8 +14,7 @@ Two functions, layered:
                           the loss that was *actually realised* over the matching
                           holding period, returning the aligned
                           ``(realised_losses, var_forecasts, dates)`` triple the
-                          backtests (Kupiec / Christoffersen / DQ / traffic light)
-                          expect.
+                          backtests (Kupiec / DQ / traffic light) expect.
 
 Horizon alignment is the methodological heart of a multi-day backtest: the model
 already computes VaR *directly* at its horizon (see ``varlib.base``), and the
@@ -128,7 +127,7 @@ def rolling_backtest(
         ``True`` (default) advances one period at a time, so the h-day windows
         overlap -- uses all the data and is the common charting convention, but
         the overlapping observations are serially dependent (which biases the
-        Christoffersen and Dynamic Quantile independence tests). ``False``
+        Dynamic Quantile independence test). ``False``
         advances ``horizon`` periods at a time, giving non-overlapping,
         independent h-day returns -- cleaner statistics, ~1/h as many points.
     dates

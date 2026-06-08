@@ -10,7 +10,6 @@ matplotlib.use("Agg")
 
 from varlib.backtest import (  # noqa: E402
     basel_traffic_light,
-    christoffersen_test,
     count_breaches,
     dynamic_quantile_test,
     kupiec_pof_test,
@@ -38,7 +37,6 @@ def backtests(data):
     flags = np.array(summary.steps["is_breach"], dtype=float)
     return {
         "kupiec": kupiec_pof_test(flags, 0.99),
-        "christoffersen": christoffersen_test(flags, 0.99),
         "dynamic_quantile": dynamic_quantile_test(flags, 0.99, var_forecasts=forecasts),
         "traffic_light": basel_traffic_light(summary.n_breaches, summary.n_observations, 0.99),
     }

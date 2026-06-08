@@ -7,7 +7,7 @@ Design goals
 2. Every formula is written step by step. Every intermediate value is traced
    and returned, so the calculation can be inspected and audited line by line.
 3. Models are validated, not just computed: the `backtest` subpackage provides
-   industry-standard VaR backtests (Kupiec, Christoffersen, Basel traffic light).
+   industry-standard VaR backtests (Kupiec, Dynamic Quantile, Basel traffic light).
 4. No dependencies beyond numpy and pandas.
 
 Quick start

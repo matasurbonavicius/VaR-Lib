@@ -105,8 +105,8 @@ def build_report(
         first page; continuation pages get a light "(continued)" header.
     backtests
         Optional dict of pre-computed result objects for the ``"tests"`` panel,
-        with any of the keys ``"kupiec"``, ``"christoffersen"``,
-        ``"dynamic_quantile"``, ``"traffic_light"``. If ``"tests"`` is requested
+        with any of the keys ``"kupiec"``, ``"dynamic_quantile"``,
+        ``"traffic_light"``. If ``"tests"`` is requested
         but this is omitted, the panel is skipped (the library does not silently
         invent tests it was not handed).
 
@@ -392,7 +392,6 @@ def _draw_section(section, ax, ctx, confidence):
         bt = ctx["backtests"]
         backtest_panel(
             kupiec=bt.get("kupiec"),
-            christoffersen=bt.get("christoffersen"),
             dynamic_quantile=bt.get("dynamic_quantile"),
             traffic_light=bt.get("traffic_light", ctx["light"]),
             ax=ax,

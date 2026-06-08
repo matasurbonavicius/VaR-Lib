@@ -1,7 +1,7 @@
 """
 Breach timeline -- a strip of breach days, to reveal clustering.
 
-The Christoffersen test asks whether breaches are independent or whether they
+The Dynamic Quantile test asks whether breaches are independent or whether they
 arrive in clusters. This chart shows the answer at a glance: each breach is a
 vertical tick on a timeline. Evenly spread ticks mean independence; ticks
 bunched together mean clustering (a model that fails in stressed periods).

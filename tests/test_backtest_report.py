@@ -1,6 +1,6 @@
 """Tests for the high-level ``varlib.report`` workflow.
 
-``run_backtest`` rolls a model and runs all four tests in one call, returning a
+``run_backtest`` rolls a model and runs every test in one call, returning a
 ``BacktestReport``. These tests check that the bundled results match running the
 pieces by hand, that the console view is faithful, and that the chart/save views
 delegate correctly (matplotlib is a hard dependency, so they run unconditionally).
@@ -16,7 +16,6 @@ from varlib import HistoricalVar, ParametricJumpVar, ParametricOuVar, run_backte
 from varlib.report import BacktestReport, _prettify
 from varlib.backtest import (
     basel_traffic_light,
-    christoffersen_test,
     count_breaches,
     dynamic_quantile_test,
     kupiec_pof_test,
@@ -32,14 +31,13 @@ def _price_series(n=600, seed=0):
     return pd.Series(prices, index=idx)
 
 
-def test_run_backtest_returns_report_with_all_four_tests():
+def test_run_backtest_returns_report_with_all_tests():
     report = run_backtest(HistoricalVar(0.99), prices=_price_series(), window=250)
     assert isinstance(report, BacktestReport)
     assert report.confidence == 0.99
     assert report.summary.n_observations == len(report.losses) == len(report.forecasts)
-    # All four verdict objects are present.
+    # Every verdict object is present.
     assert report.kupiec is not None
-    assert report.christoffersen is not None
     assert report.dynamic_quantile is not None
     assert report.traffic_light is not None
 
@@ -55,9 +53,6 @@ def test_bundle_matches_running_the_pieces_by_hand():
 
     assert report.summary.n_breaches == summary.n_breaches
     assert report.kupiec.p_value == kupiec_pof_test(flags, 0.99).p_value
-    assert report.christoffersen.p_value_conditional == (
-        christoffersen_test(flags, 0.99).p_value_conditional
-    )
     assert report.dynamic_quantile.p_value == (
         dynamic_quantile_test(flags, 0.99, var_forecasts=forecasts).p_value
     )
@@ -75,7 +70,7 @@ def test_format_contains_every_verdict():
     report = run_backtest(HistoricalVar(0.99), prices=_price_series(), window=250)
     text = report.format("My title")
     assert "My title" in text
-    for label in ("Kupiec POF", "Christoffersen", "Dynamic Quantile", "Basel zone"):
+    for label in ("Kupiec POF", "Dynamic Quantile", "Basel zone"):
         assert label in text
     assert "OK" in text or "REJECT" in text
 
