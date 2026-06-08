@@ -1,9 +1,6 @@
 """Tests for the Dynamic Quantile chart."""
 
 import numpy as np
-import pytest
-
-pytest.importorskip("matplotlib")
 
 from varlib.backtest import dynamic_quantile_test
 from varlib.plotting import dq_chart

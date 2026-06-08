@@ -1,27 +1,17 @@
 """
-Shared plotting helpers: the lazy matplotlib import and a consistent style.
+Shared plotting helpers: the matplotlib import and a consistent style.
 
-Keeping the import in one place means every chart fails with the same clear
-message if matplotlib is not installed, and every chart shares one colour
-palette and one set of axis conventions, so the charts look like a set.
+Keeping the import in one place means every chart shares one colour palette and
+one set of axis conventions, so the charts look like a set.
 """
 
 from __future__ import annotations
 
 
 def get_pyplot():
-    """
-    Import matplotlib.pyplot, with a clear message if it is not installed.
+    """Import matplotlib.pyplot."""
+    import matplotlib.pyplot as plt
 
-    matplotlib is an optional extra; the core library never imports it.
-    """
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError as exc:  # pragma: no cover - exercised only without mpl
-        raise ImportError(
-            "Charting needs matplotlib, which is an optional extra.\n"
-            'Install it with:  pip install "varlib[plot]"'
-        ) from exc
     return plt
 
 

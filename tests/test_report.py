@@ -1,14 +1,11 @@
-"""Tests for the selective / multi-page report composer.
-
-Matplotlib is an optional extra; these tests skip cleanly if it is absent.
-"""
+"""Tests for the selective / multi-page report composer."""
 
 import os
 
 import numpy as np
 import pytest
+import matplotlib
 
-matplotlib = pytest.importorskip("matplotlib")
 matplotlib.use("Agg")
 
 from varlib.backtest import (  # noqa: E402

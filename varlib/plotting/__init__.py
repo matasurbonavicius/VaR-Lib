@@ -1,12 +1,6 @@
 """
 Charts for VaR backtests.
 
-This subpackage is the ONLY part of varlib that needs matplotlib, and it is
-imported lazily so the core library stays dependency-free (numpy + pandas).
-Install the optional extra to use it:
-
-    pip install "varlib[plot]"
-
 One chart per file, each a small function that takes plain data and returns a
 matplotlib Axes, so charts compose and can be saved or embedded freely:
 

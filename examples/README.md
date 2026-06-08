@@ -3,19 +3,13 @@
 Runnable examples on real data — daily AAPL prices, 2020–2024, committed in
 `data/AAPL.csv`, so everything runs offline.
 
-Charting needs the optional plotting extra:
-
-```bash
-pip install -e ".[plot]"
-```
-
 ## Choosing a model
 
 Every charting example takes the same two flags:
 
 | Flag           | Values                                          | Default      |
 |----------------|-------------------------------------------------|--------------|
-| `--model`      | `historical`, `bootstrap`, `brownian`, `ou`, `jump` | `historical` |
+| `--model`      | `historical`, `bootstrap`, `brownian`, `ou`, `jump`, `ewma` | `historical` |
 | `--confidence` | a level in (0, 1), e.g. `0.99`, `0.975`         | `0.99`       |
 
 Generated PNGs are written to `output/` (created on first run), named by model,

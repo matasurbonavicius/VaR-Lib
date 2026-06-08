@@ -1,13 +1,12 @@
 """Shared fixtures for the plotting tests.
 
-All plotting tests are skipped if matplotlib is not installed (it is an optional
-extra). The Agg backend is forced so the tests run headless on any machine.
+The Agg backend is forced so the tests run headless on any machine.
 """
 
 import numpy as np
 import pytest
+import matplotlib
 
-matplotlib = pytest.importorskip("matplotlib")
 matplotlib.use("Agg")
 
 

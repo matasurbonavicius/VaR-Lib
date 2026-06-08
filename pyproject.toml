@@ -25,17 +25,12 @@ classifiers = [
     "Topic :: Office/Business :: Financial :: Investment",
     "Topic :: Scientific/Engineering :: Mathematics",
 ]
-dependencies = ["numpy>=1.20", "pandas>=1.2"]
+dependencies = ["numpy>=1.20", "pandas>=1.2", "matplotlib>=3.4", "pytest>=7.0"]
 
-# When the GitHub repo exists, add its links here so PyPI points back to it:
-# [project.urls]
-# Homepage = "https://github.com/<you>/varlib"
-# Repository = "https://github.com/<you>/varlib"
-# Issues = "https://github.com/<you>/varlib/issues"
-
-[project.optional-dependencies]
-test = ["pytest>=7.0"]
-plot = ["matplotlib>=3.4"]
+[project.urls]
+Homepage = "https://github.com/matasurbonavicius/VaR-Lib"
+Repository = "https://github.com/matasurbonavicius/VaR-Lib"
+Issues = "https://github.com/matasurbonavicius/VaR-Lib/issues"
 
 [tool.setuptools.packages.find]
 include = ["varlib*"]

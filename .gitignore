@@ -10,14 +10,18 @@ dist/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
 
 # Virtual environments
 .venv/
 venv/
 env/
 
-# Generated charts (reproducible via the examples/ scripts)
-examples/output/*.png
+# Generated charts/reports (reproducible via the examples/ scripts)
+examples/output/*
 # ...except the dashboard, which the README embeds.
 !examples/output/dashboard_historical.png
 

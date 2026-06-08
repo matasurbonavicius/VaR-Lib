@@ -1,6 +1,6 @@
 # varlib — readable, validated Value at Risk
 
-*Nine VaR models · Expected Shortfall on every one · four regulatory backtests ·
+*Six VaR models · Expected Shortfall on every one · four regulatory backtests ·
 selective multi-page reports · numpy + pandas only.*
 
 A small Value at Risk (VaR) library built around three ideas:
@@ -63,15 +63,10 @@ catch. That is the case for carrying several models and several tests.
 
 ```bash
 pip install -e .
-# for the tests:
-pip install -e ".[test]"
-# for the backtest charts (optional, adds matplotlib):
-pip install -e ".[plot]"
 ```
 
-The core library depends only on numpy and pandas. Charting is the **only**
-feature that needs matplotlib, and it is an isolated optional extra — installs
-that just want the VaR numbers never pull it in.
+One install gives you everything: the VaR engine (numpy + pandas), the charts
+(matplotlib), and the test suite (pytest).
 
 ## Quick start
 
@@ -188,8 +183,8 @@ zone    = basel_traffic_light(summary.n_breaches, summary.n_observations)
 
 ## Charts
 
-The `varlib.plotting` package turns a backtest into report-ready charts
-(needs the `plot` extra). One chart per file, each returning a matplotlib Axes:
+The `varlib.plotting` package turns a backtest into report-ready charts.
+One chart per file, each returning a matplotlib Axes:
 
 | Function              | Chart                                                  |
 |-----------------------|--------------------------------------------------------|
@@ -231,7 +226,7 @@ The default (no `sections`) reproduces the dashboard's one-page set, so nothing
 regresses.
 
 The `examples/` folder shows each of these in action. Every example takes
-`--model historical|bootstrap|brownian|ou|jump|t|ewma`
+`--model historical|bootstrap|brownian|ou|jump|ewma`
 (default `historical`) and `--confidence`, and writes to `examples/output/`:
 
 ```bash
@@ -239,7 +234,7 @@ The `examples/` folder shows each of these in action. Every example takes
 python examples/full_backtest.py --model ewma
 
 # a selective, multi-page report (two A4 pages)
-python examples/full_backtest.py --model t --sections all
+python examples/full_backtest.py --model jump --sections all
 python examples/full_backtest.py --model ewma --sections breaches,tests
 
 # or each chart on its own
@@ -286,9 +281,9 @@ come from?", the answer is in `result.steps`.
 varlib/
   base.py                  VarModel abstract class + VarResult contract
   _returns.py              price -> log return conversion (traced)
-  models/                  one VaR method per file (nine of them)
+  models/                  one VaR method per file (six of them)
   backtest/                rolling VaR + kupiec / christoffersen / dynamic quantile / traffic light
-  plotting/                one chart per file + report composer (optional, needs matplotlib)
+  plotting/                one chart per file + report composer (matplotlib)
 examples/
   single_instrument.py     end-to-end: price -> VaR -> backtest (console)
   full_backtest.py         roll a model, print stats, render the dashboard
@@ -301,7 +296,7 @@ tests/
   test_parametric_ou/      sub-folder: calibration tested apart from the VaR
   test_parametric_jump/    sub-folder: jump separation tested apart from the VaR
   backtest/                kupiec / christoffersen / traffic light
-  plotting/                one file per chart (skipped without matplotlib)
+  plotting/                one file per chart
 ```
 
 ## Design notes
@@ -309,10 +304,9 @@ tests/
 - **Log returns** are used throughout, because they are additive over time —
   so the h-day return is just the **sum** of the daily returns, which is how both
   the h-day forecast and the h-day realised loss are built.
-- **No scipy.** The normal quantile (Acklam), the chi-square tail (incomplete
-  gamma) and the GPD tail fit (probability-weighted moments) are all implemented from standard,
-  well-conditioned numerical routines so the dependency footprint stays at
-  numpy + pandas.
+- **No scipy.** The normal quantile (Acklam) and the chi-square tail (incomplete
+  gamma) are both implemented from standard, well-conditioned numerical routines
+  so the dependency footprint stays at numpy + pandas.
 - **Reproducible.** Every model that simulates takes a `seed`; same seed → same
   number, every time.
 
@@ -325,7 +319,7 @@ pytest -q
 Each VaR method has its own test file. Methods with internal helpers (OU
 calibration, jump separation) get a sub-folder so the helper is tested in
 isolation from the VaR that uses it. Backtests and charts have their own test
-folders; the chart tests skip automatically if matplotlib is not installed.
+folders.
 
 Coverage includes the things that matter for a risk library: ES ≥ VaR for every
 model, the Gaussian VaR/ES closed forms checked against textbook values, the
