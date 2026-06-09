@@ -24,6 +24,7 @@ env/
 examples/output/*
 # ...except the dashboard, which the README embeds.
 !examples/output/dashboard_historical.png
+!examples/output/paths.png
 
 # Editors / OS
 .vscode/
