@@ -1,4 +1,4 @@
-# varlib - Value-at-risk focused lightweight library
+# VaR-Lib - Value-at-risk focused lightweight library
 
 *Six VaR models · ES on every one · three backtests ·
 one-call reports · numpy + pandas only.*
