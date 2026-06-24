@@ -1,5 +1,5 @@
 """
-Breach counting and the Basel traffic-light test -- the supervisory view.
+Breach counting and the Basel traffic-light test
 
 Regulators do not run a likelihood-ratio test; they count breaches over the last
 250 trading days and place the model in a zone:
@@ -8,10 +8,7 @@ Regulators do not run a likelihood-ratio test; they count breaches over the last
   * Yellow (5-9 breaches):        watch it; capital add-on increases with count.
   * Red    (10+ breaches):        the model is rejected.
 
-The boundaries come from the cumulative binomial: green covers up to the 95th
-percentile of the breach count, red starts where the cumulative probability
-exceeds 99.99%. We compute those probabilities directly so the zoning is
-transparent rather than hard-coded magic numbers.
+Reference: https://www.bis.org/publ/bcbs22.pdf
 """
 
 from __future__ import annotations
@@ -20,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
+from scipy.stats import binom
 
 
 @dataclass
@@ -121,8 +119,10 @@ def basel_traffic_light(
     steps["expected_rate"] = expected_rate
     steps["n_observations"] = n_observations
 
-    # Step 1: cumulative binomial probability P(X <= k) for each possible count.
-    cumulative = _binomial_cdf_table(n_observations, expected_rate)
+    # Step 1: cumulative binomial probability P(X <= k) for each possible count
+    # k = 0..n, under a correctly specified model where X ~ Binomial(n, rate).
+    counts = np.arange(n_observations + 1)
+    cumulative = binom.cdf(counts, n_observations, expected_rate)
     steps["cumulative_at_count"] = float(cumulative[n_breaches])
 
     # Step 2: locate the zone boundaries from the cumulative distribution.
@@ -153,18 +153,3 @@ def basel_traffic_light(
         red_min=red_min,
         steps=steps,
     )
-
-
-def _binomial_cdf_table(n: int, p: float) -> np.ndarray:
-    """
-    Return P(X <= k) for k = 0..n where X ~ Binomial(n, p).
-
-    Built by recurrence on the probability mass function, which avoids large
-    factorials:  pmf(k+1) = pmf(k) * (n - k) / (k + 1) * p / (1 - p).
-    """
-    pmf = np.empty(n + 1, dtype=float)
-    pmf[0] = (1.0 - p) ** n
-    ratio = p / (1.0 - p)
-    for k in range(n):
-        pmf[k + 1] = pmf[k] * (n - k) / (k + 1) * ratio
-    return np.cumsum(pmf)

@@ -1,7 +1,7 @@
 # VaR-Lib - Value-at-risk focused lightweight library
 
 *Six VaR models · ES on every one · three backtests ·
-one-call reports · numpy + pandas only.*
+one-call reports.*
 
 A small Value at Risk library built on three ideas:
 
@@ -28,8 +28,8 @@ VaR and ES estimated on 2023-01-03 .. 2024-12-31 (502 days):
   Model                          VaR        ES
   Historical                  2.969%    4.048%
   Historical bootstrap        3.227%    3.908%
-  Parametric Brownian         2.980%    3.435%
-  Parametric OU               3.034%    3.489%
+  Parametric Brownian         3.006%    3.465%
+  Parametric OU               3.060%    3.519%
   Parametric jump             2.936%    4.509%
   EWMA / RiskMetrics          2.308%    2.664%
 
@@ -47,8 +47,13 @@ Backtest: rolling Historical VaR, full 2020-2024 history  (confidence = 99%)
 pip install -e .
 ```
 
-Pulls numpy, pandas, matplotlib (charts), and pytest (tests). The VaR engine
-itself uses only numpy + pandas.
+Pulls numpy, pandas, scipy, matplotlib (charts), and pytest (tests). scipy
+supplies the standard statistical functions the library relies on: the Normal
+pdf/quantile used by the EWMA model, and the binomial and chi-square
+distributions behind the Kupiec, Dynamic Quantile, and Basel traffic-light
+backtests. It is a relatively heavy dependency (a large, compiled package),
+pulled in for convenience and correctness over reimplementing these functions
+by hand.
 
 ## Quick start
 

@@ -1,5 +1,5 @@
 """
-varlib — a readable, dependency-light Value at Risk library.
+varlib — a readable, validated Value at Risk library.
 
 Design goals
 ------------
@@ -8,7 +8,8 @@ Design goals
    and returned, so the calculation can be inspected and audited line by line.
 3. Models are validated, not just computed: the `backtest` subpackage provides
    industry-standard VaR backtests (Kupiec, Dynamic Quantile, Basel traffic light).
-4. No dependencies beyond numpy and pandas.
+4. A small dependency surface: numpy and pandas for the engine, with scipy for
+   the standard statistical functions (Normal, binomial, chi-square).
 
 Quick start
 -----------

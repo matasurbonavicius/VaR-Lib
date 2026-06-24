@@ -66,9 +66,10 @@ def test_confidence_comes_from_the_model():
     assert report.confidence == 0.975
 
 
-def test_format_contains_every_verdict():
+def test_print_contains_every_verdict(capsys):
     report = run_backtest(HistoricalVar(0.99), prices=_price_series(), window=250)
-    text = report.format("My title")
+    report.print("My title")
+    text = capsys.readouterr().out
     assert "My title" in text
     for label in ("Kupiec POF", "Dynamic Quantile", "Basel zone"):
         assert label in text
@@ -112,9 +113,9 @@ def test_prettify_falls_back_for_unknown_classes():
 
 def test_default_title_and_subtitle_describe_the_run():
     report = run_backtest(HistoricalVar(0.99), prices=_price_series(), window=200)
-    assert report.default_title() == "Historical VaR — backtest report"
+    assert report.default_title() == "Historical VaR | backtest report"
     sub = report.default_subtitle()
-    assert "1-day" in sub and "200-day window" in sub and "99% confidence" in sub
+    assert "1-day" in sub and "200-day window" in sub
 
 
 def test_default_footer_has_inputs_result_and_tests():

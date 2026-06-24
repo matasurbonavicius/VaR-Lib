@@ -1,11 +1,9 @@
 """
-Dynamic Quantile test (Engle & Manganelli) -- the modern conditional-coverage test.
+Dynamic Quantile test (Engle & Manganelli)
 
 Kupiec checks only the *number* of breaches. The Dynamic Quantile (DQ) test adds
 the independence side: it asks whether the breaches can be *predicted* from
 anything known the day before -- their own recent history, or the VaR's own level
--- so a model with the right average breach count but clustered or VaR-correlated
-breaches still fails.
 
 The idea. Define the centred breach (the "hit"):
 
@@ -14,7 +12,7 @@ The idea. Define the centred breach (the "hit"):
 Under a correct model the breach probability is exactly ``1 - confidence`` every
 day regardless of history, so ``Hit_t`` has mean zero and is unpredictable. We
 test that by regressing ``Hit_t`` on a constant, several of its own lags, and the
-contemporaneous VaR forecast, then asking whether *all* those coefficients are
+VaR forecast, then asking whether *all* those coefficients are
 jointly zero. If any of them matters, the breaches are forecastable -- the model
 is mis-specified, even if it has the right average breach count.
 
@@ -34,8 +32,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import numpy as np
-
-from varlib.backtest._chi_square import chi_square_sf
+from scipy.stats import chi2
 
 
 @dataclass
@@ -106,39 +103,32 @@ def dynamic_quantile_test(
     hits = breaches - q
     steps["hits_mean"] = float(np.mean(hits))
 
-    # Step 2: build the regression. Row t (for t = n_lags .. n-1) predicts Hit_t
-    # from a constant, the previous `n_lags` hits, and -- if supplied -- the
-    # contemporaneous VaR forecast (information available when the forecast was
-    # made). We drop the first `n_lags` rows that have no full lag history.
-    rows = []
-    targets = []
+    # Step 2: build the regression. We predict Hit_t (for t = n_lags .. n-1) from
+    # a constant, the previous `n_lags` hits, and -- if supplied -- the
+    # VaR forecast. The first `n_lags` rows have no full lag
+    # history, so the target is just hits[n_lags:] and each regressor is a shifted
+    # slice of the hit series (column for lag j is Hit_{t-j}). One column per
+    # regressor, stacked -- no per-row Python loop needed.
     use_var = var_forecasts is not None
     if use_var:
         var_forecasts = np.asarray(var_forecasts, dtype=float)
         if var_forecasts.shape != breaches.shape:
-            raise ValueError("var_forecasts and breaches must be the same length.")
-    for t in range(n_lags, n):
-        row = [1.0]                                  # constant
-        row.extend(hits[t - n_lags:t][::-1])         # Hit_{t-1} .. Hit_{t-lags}
-        if use_var:
-            row.append(float(var_forecasts[t]))      # contemporaneous VaR
-        rows.append(row)
-        targets.append(hits[t])
-    X = np.asarray(rows, dtype=float)
-    y = np.asarray(targets, dtype=float)
+            raise ValueError("var_forecasts and breaches are not the same length.")
+
+    y = hits[n_lags:]                                 # Hit_t, t = n_lags .. n-1
+    columns = [np.ones(n - n_lags)]                   # constant
+    for j in range(1, n_lags + 1):                    # Hit_{t-1} .. Hit_{t-n_lags}
+        columns.append(hits[n_lags - j:n - j])
+    if use_var:
+        columns.append(var_forecasts[n_lags:])        # VaR
+    X = np.column_stack(columns)
     k = X.shape[1]
     steps["n_regressors"] = k
     steps["includes_var_level"] = use_var
 
-    # Step 3: ordinary-least-squares coefficients, beta = (X'X)^-1 X'y. We solve
-    # the normal equations directly; a tiny ridge guards the rare singular case
-    # (e.g. no breaches at all, so every hit equals -q and the lags are collinear).
+    # Step 3: ordinary-least-squares coefficients via least squares 
     xtx = X.T @ X
-    xty = X.T @ y
-    try:
-        beta = np.linalg.solve(xtx, xty)
-    except np.linalg.LinAlgError:
-        beta = np.linalg.solve(xtx + 1e-10 * np.eye(k), xty)
+    beta, *_ = np.linalg.lstsq(X, y, rcond=None)
     steps["coefficients"] = beta
 
     # Step 4: the DQ statistic. Under the null all coefficients are zero, and
@@ -151,7 +141,7 @@ def dynamic_quantile_test(
     steps["xtx"] = xtx
 
     # Step 5: the p-value (chi-square upper tail with k dof) and the decision.
-    p_value = chi_square_sf(statistic, df=k)
+    p_value = float(chi2.sf(statistic, df=k))
     steps["p_value"] = p_value
     reject = bool(p_value < significance)
     steps["reject"] = reject

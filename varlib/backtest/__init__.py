@@ -1,27 +1,4 @@
-"""
-VaR backtesting -- the part that turns a number into a validated number.
-
-A VaR estimate is only useful if it is the right size: not so loose that it
-never gets breached (wasting capital) and not so tight that it is breached far
-too often (understating risk). Backtesting checks this against realised data.
-
-The standard workflow on a single instrument (``rolling_backtest`` does steps
-1-3 for you):
-
-  1. Roll the VaR model through history, producing a VaR forecast for each day.
-  2. Compare each forecast against the realised loss the next day.
-  3. A "breach" (or "exception") is a day where the realised loss exceeded the
-     forecast VaR.
-  4. Run statistical tests on the breach sequence:
-       - Kupiec POF:     are there roughly the right NUMBER of breaches?
-       - Dynamic Quantile: can the breaches be PREDICTED from their own past or
-                         the VaR level? (Engle-Manganelli -- the modern test of
-                         independence and correct coverage together.)
-       - Traffic light:  Basel's supervisory green/yellow/red zoning.
-
-Every test returns a small, named result object so the verdict and the numbers
-behind it are both visible.
-"""
+"""VaR backtesting"""
 
 from varlib.backtest.rolling import rolling_var, rolling_backtest
 from varlib.backtest.kupiec import KupiecResult, kupiec_pof_test

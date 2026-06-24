@@ -119,19 +119,27 @@ def _fit_ar1(x):
     return b, sig, theta, x[-1]
 
 
+def _simulated_std(res):
+    """Empirical std of the model's simulated h-day returns (the MC sample)."""
+    return float(np.std(res.steps["simulated_returns"], ddof=1))
+
+
 def test_ou_horizon_one_is_loss_on_next_single_return():
-    # At horizon 1, S_1 = x_1: sigma_sum == residual sigma, no accumulation.
+    # At horizon 1, S_1 = x_1, so the simulated sample has std == residual sigma
+    # (no accumulation). The model is Monte Carlo, so this holds up to MC noise.
     rng = np.random.default_rng(2)
     n, b, sig = 2000, 0.6, 0.02
     x = np.zeros(n)
     for t in range(1, n):
         x[t] = b * x[t - 1] + rng.normal(0, sig)
     res = ParametricOuVar(0.99, horizon=1).run(returns=x)
-    assert res.steps["sigma_sum"] == pytest.approx(res.steps["sigma_ou"])
+    assert _simulated_std(res) == pytest.approx(res.steps["sigma_ou"], rel=0.03)
 
 
 def test_ou_cumulative_std_matches_closed_form():
-    # The model's sigma_sum equals the cumulative-AR(1) closed form.
+    # The simulated cumulative-return std matches the cumulative-AR(1) closed form
+    # within Monte Carlo sampling error (the analytic property still holds; it is
+    # now verified empirically off the simulated paths rather than exactly).
     rng = np.random.default_rng(1)
     n, b_true, sig_true = 4000, 0.7, 0.01
     x = np.zeros(n)
@@ -142,7 +150,7 @@ def test_ou_cumulative_std_matches_closed_form():
     for h in (2, 5, 10, 50):
         res = ParametricOuVar(0.99, horizon=h).run(returns=x)
         expected = _ou_cumulative_var_std(b, sig, theta, x0, h)
-        assert res.steps["sigma_sum"] == pytest.approx(expected, rel=1e-6)
+        assert _simulated_std(res) == pytest.approx(expected, rel=0.03)
 
 
 def test_ou_cumulative_variance_direction_follows_autocorrelation():
@@ -150,20 +158,21 @@ def test_ou_cumulative_variance_direction_follows_autocorrelation():
     # the AR(1) coefficient b:
     #   b > 0 (persistent): shocks compound -> Var[S_h] ABOVE  h*sigma^2.
     #   b < 0 (oscillating): shocks cancel  -> Var[S_h] BELOW  h*sigma^2.
-    # This is exactly the structure sqrt-of-time scaling cannot capture.
+    # This is exactly the structure sqrt-of-time scaling cannot capture, and it
+    # shows up directly in the std of the simulated paths.
     h = 10
 
-    def sigma_sum_vs_iid(b_true):
+    def sim_std_vs_iid(b_true):
         rng = np.random.default_rng(abs(int(b_true * 100)) + 1)
         n, sig = 4000, 0.01
         x = np.zeros(n)
         for t in range(1, n):
             x[t] = b_true * x[t - 1] + rng.normal(0, sig)
         res = ParametricOuVar(0.99, horizon=h).run(returns=x)
-        return res.steps["sigma_sum"], np.sqrt(h) * res.steps["sigma_ou"]
+        return _simulated_std(res), np.sqrt(h) * res.steps["sigma_ou"]
 
-    pos_sum, pos_iid = sigma_sum_vs_iid(0.7)
+    pos_sum, pos_iid = sim_std_vs_iid(0.7)
     assert pos_sum > pos_iid                       # persistence amplifies
 
-    neg_sum, neg_iid = sigma_sum_vs_iid(-0.7)
+    neg_sum, neg_iid = sim_std_vs_iid(-0.7)
     assert neg_sum < neg_iid                        # oscillation damps

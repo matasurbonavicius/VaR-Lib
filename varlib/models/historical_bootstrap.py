@@ -1,10 +1,8 @@
 """
-Historical Bootstrap VaR -- historical simulation with resampling.
+Historical Bootstrap VaR
 
-Plain Historical VaR reads the quantile off the one sample of returns we happen
-to have. The bootstrap instead draws many new samples *from* that history (with
-replacement), computes the VaR in each one, and averages. This smooths the
-estimate and, as a by-product, tells us how uncertain the VaR is.
+Draws paths of future returns by resampling the historical returns with replacement. 
+Paths at horizon create a distribution which is used to compute VaR and ES.
 
 It is still fully non-parametric: every resampled return is a real historical
 return. We only assume that the future looks like a reshuffling of the past.
@@ -68,9 +66,6 @@ def historical_bootstrap_var_es(
     VaR and ES of that resample are then the bootstrap's view of the h-day risk.
     The reported numbers are the means across resamples; the spread across
     resamples is recorded as the estimation uncertainty.
-
-    For ``horizon == 1`` each "h-day return" is a single daily draw, so this
-    reduces exactly to the ordinary one-day bootstrap.
     """
     if steps is None:
         steps = {}
