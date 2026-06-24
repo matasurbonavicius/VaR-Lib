@@ -3,17 +3,6 @@ Parametric Brownian-motion VaR -- the classic variance-covariance method.
 
 We assume returns are driven by a Brownian motion, i.e. they are normally
 distributed with a constant mean (drift) and standard deviation (volatility).
-Under that assumption the VaR has a closed form: it is the loss at the chosen
-point in the left tail of a normal distribution.
-
-    VaR = -(mu + z * sigma)
-
-where `z` is the standard-normal quantile at (1 - confidence). For 99%
-confidence, z is about -2.326, so the VaR is roughly mu's mirror plus 2.326
-volatilities of loss.
-
-The normal quantile is computed from scratch (Acklam's rational approximation)
-so the library needs no scipy.
 """
 
 from __future__ import annotations
