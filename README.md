@@ -31,7 +31,7 @@ VaR and ES estimated on 2023-01-03 .. 2024-12-31 (502 days):
   Parametric Brownian         3.006%    3.465%
   Parametric OU               3.060%    3.519%
   Parametric jump             2.936%    4.509%
-  EWMA / RiskMetrics          2.308%    2.664%
+  EWMA                        2.308%    2.664%
 
 Backtest: rolling Historical VaR, full 2020-2024 history  (confidence = 99%)
   Observations    : 1007
