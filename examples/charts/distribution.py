@@ -13,10 +13,10 @@ change the one line that builds it.
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from varlib import HistoricalVar
-from varlib._returns import to_returns
 from varlib.plotting import distribution_chart
 
 HERE = os.path.dirname(os.path.dirname(__file__))
@@ -29,8 +29,8 @@ def main():
     os.makedirs(OUTPUT, exist_ok=True)
 
     # Estimate on the most recent ~two years of returns.
-    recent = to_returns(prices.to_numpy())[-500:]
-    result = HistoricalVar(confidence=0.99).run(returns=recent)
+    recent = np.diff(np.log(prices.to_numpy()))[-500:]
+    result = HistoricalVar(confidence=0.99).run(recent)
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
     distribution_chart(recent, result.value, result.expected_shortfall, 0.99, ax=ax)

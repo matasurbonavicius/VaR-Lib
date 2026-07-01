@@ -18,9 +18,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from varlib._returns import to_returns
-from varlib.models.historical import historical_var
-from varlib.models.parametric_jump import estimate_jump_parameters, _sum_jumps
+from varlib.models.non_parametric.historical import historical_var
+from varlib.models.parametric.jump.jump import estimate_jump_parameters, _sum_jumps
 from varlib.plotting import paths_chart
 
 HERE = os.path.dirname(os.path.dirname(__file__))
@@ -46,7 +45,7 @@ def bootstrap_paths(returns, rng):
 
 def main():
     prices = pd.read_csv(DATA, parse_dates=["Date"], index_col="Date")["AAPL"].dropna()
-    returns = to_returns(prices.to_numpy())[-500:]   # most recent ~two years
+    returns = np.diff(np.log(prices.to_numpy()))[-500:]   # most recent ~two years
     rng = np.random.default_rng(SEED)
     os.makedirs(OUTPUT, exist_ok=True)
 

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from varlib.models.parametric_jump import estimate_jump_parameters
+from varlib.models.parametric.jump import estimate_jump_parameters
 
 
 def test_no_jumps_when_data_is_clean_normal():

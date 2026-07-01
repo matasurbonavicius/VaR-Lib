@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from varlib import ParametricBrownianVar, parametric_brownian_var
-from varlib.models.parametric_brownian import normal_quantile
+from varlib.models.parametric.brownian import normal_quantile
 
 
 def test_normal_quantile_known_values():
@@ -60,7 +60,7 @@ def test_model_wrapper_runs():
 
 def test_es_matches_gaussian_closed_form():
     # For N(0, sigma) at 99%, ES = sigma * pdf(z) / 0.01, z = quantile(0.01).
-    from varlib.models.parametric_brownian import normal_quantile, normal_pdf
+    from varlib.models.parametric.brownian import normal_quantile, normal_pdf
     sigma = 0.02
     z = normal_quantile(0.01)
     expected = sigma * normal_pdf(z) / 0.01
@@ -84,6 +84,6 @@ def test_es_close_to_historical_es_on_normal_data():
 
 
 def test_normal_pdf_known_values():
-    from varlib.models.parametric_brownian import normal_pdf
+    from varlib.models.parametric.brownian import normal_pdf
     assert normal_pdf(0.0) == pytest.approx(0.3989422804, abs=1e-9)
     assert normal_pdf(1.0) == pytest.approx(0.2419707245, abs=1e-9)

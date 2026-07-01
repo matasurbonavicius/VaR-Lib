@@ -25,7 +25,7 @@ from typing import Any, NamedTuple
 import numpy as np
 
 from varlib.base import VarModel
-from varlib.models.parametric_brownian import normal_pdf, normal_quantile
+from varlib.models.parametric.brownian.brownian import normal_pdf, normal_quantile
 
 
 class OuParameters(NamedTuple):

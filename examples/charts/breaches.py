@@ -13,6 +13,7 @@ the one line that builds it.
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from varlib import HistoricalVar
@@ -26,10 +27,12 @@ OUTPUT = os.path.join(HERE, "output")
 
 def main():
     prices = pd.read_csv(DATA, parse_dates=["Date"], index_col="Date")["AAPL"].dropna()
+    # Models consume returns; log returns keep the price index (minus day one).
+    returns = np.log(prices / prices.shift(1)).dropna()
     os.makedirs(OUTPUT, exist_ok=True)
 
     model = HistoricalVar(confidence=0.99)
-    losses, forecasts, dates = rolling_backtest(model, prices=prices, window=250)
+    losses, forecasts, dates = rolling_backtest(model, returns=returns, window=250)
 
     fig, ax = plt.subplots(figsize=(11, 4.5))
     breaches_chart(losses, forecasts, dates, 0.99, ax=ax)

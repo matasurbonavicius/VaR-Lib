@@ -4,14 +4,15 @@ One call, the whole backtest: roll a model, run every test, render the report.
 The backtest workflow has a fixed shape -- roll the model through history, count
 the breaches, run the standard tests, then print or plot the verdict. That
 shape was previously re-assembled by hand in every script. `BacktestReport`
-packages it: hand it a model and a price (or return) series and it does the roll
-and every test, then renders them to the console, a dashboard figure, or a
-PDF -- with a title and a self-describing metrics footer generated for you, so
-the default report is print-ready with no styling code at all.
+packages it: hand it a model and a return series and it does the roll and every
+test, then renders them to the console, a dashboard figure, or a PDF -- with a
+title and a self-describing metrics footer generated for you, so the default
+report is print-ready with no styling code at all.
 
     from varlib import HistoricalVar, run_backtest
 
-    report = run_backtest(HistoricalVar(0.99), prices=prices, window=250)
+    returns = np.log(prices / prices.shift(1)).dropna()
+    report = run_backtest(HistoricalVar(0.99), returns=returns, window=250)
     report.print()                      # the console summary
     report.save("backtest.pdf")         # the print-ready dashboard, fully labelled
 
@@ -256,8 +257,7 @@ class BacktestReport:
 def run_backtest(
     model: VarModel,
     *,
-    returns: Optional[Any] = None,
-    prices: Optional[Any] = None,
+    returns: Any,
     window: int = 250,
     overlap: bool = True,
     dates: Optional[Sequence[Any]] = None,
@@ -274,16 +274,16 @@ def run_backtest(
     model
         Any ``VarModel`` instance. Its ``confidence`` is used for the tests and
         its ``horizon`` drives the realised-loss window.
-    returns, prices
-        Provide exactly one, as in ``rolling_backtest``. A pandas Series labels
-        each step from its index.
+    returns
+        The log-return series, as in ``rolling_backtest``. A pandas Series labels
+        each step from its index. Compute log returns from prices yourself first.
     window, overlap, dates
         Passed straight through to ``rolling_backtest``.
     """
     confidence = float(getattr(model, "confidence"))
     horizon = int(getattr(model, "horizon", 1))
     losses, forecasts, step_dates = rolling_backtest(
-        model, returns=returns, prices=prices,
+        model, returns=returns,
         window=window, overlap=overlap, dates=dates,
     )
 

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from varlib.models.parametric_ou import estimate_ou_parameters
+from varlib.models.parametric.ou import estimate_ou_parameters
 
 
 def simulate_ou(kappa, theta, sigma, n, seed=0, x0=None):

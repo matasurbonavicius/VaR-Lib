@@ -46,9 +46,8 @@ def test_model_returns_var_result_with_full_trace():
 
 def test_accepts_prices_and_returns_equivalently():
     prices = np.array([100.0, 101.0, 99.0, 102.0, 98.0, 100.0])
-    from varlib._returns import to_returns
-    returns = to_returns(prices)
-    from_prices = HistoricalVar(0.95).run(prices=prices).value
+    returns = np.diff(np.log(prices))
+    from_prices = HistoricalVar(0.95).run(returns).value
     from_returns = HistoricalVar(0.95).run(returns=returns).value
     assert from_prices == pytest.approx(from_returns)
 

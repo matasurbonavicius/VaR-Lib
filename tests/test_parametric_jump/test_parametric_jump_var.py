@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from varlib import ParametricJumpVar, parametric_jump_var
-from varlib.models.parametric_jump import JumpParameters
+from varlib.models.parametric.jump import JumpParameters
 
 
 def test_var_is_positive_and_reproducible():

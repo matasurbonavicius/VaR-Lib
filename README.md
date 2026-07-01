@@ -64,7 +64,8 @@ import numpy as np
 from varlib import HistoricalVar
 
 prices = np.array([100, 101, 99, 102, 98, 100, 103, 97])
-result = HistoricalVar(confidence=0.99).run(prices=prices)   # or run(returns=...)
+returns = np.diff(np.log(prices))                            # your log returns
+result = HistoricalVar(confidence=0.99).run(returns)         # models take returns
 
 result.value                 # the VaR, a positive loss fraction (×position = money)
 result.expected_shortfall    # the ES (a.k.a. CVaR), always >= VaR
@@ -85,7 +86,7 @@ tail mean, or bootstrap).
 ```python
 from varlib import HistoricalVar, run_backtest
 
-report = run_backtest(HistoricalVar(0.99), prices=prices, window=250)
+report = run_backtest(HistoricalVar(0.99), returns=returns, window=250)
 
 report.print()                 # the console summary (breaches + every test)
 report.save("backtest.pdf")    # a single print-ready dashboard page
@@ -101,7 +102,8 @@ you pass data, not styling. That is all the examples do: load data, call
 
 ## The models
 
-Each lives in its own file under `varlib/models/`:
+Each lives in its own folder under `varlib/models/`, grouped into `parametric/`
+and `non_parametric/`:
 
 | Model                    | Assumes                                              |
 |--------------------------|------------------------------------------------------|
@@ -112,7 +114,8 @@ Each lives in its own file under `varlib/models/`:
 | `ParametricJumpVar`      | Normal diffusion **plus** rare Merton jumps (fat tails). |
 | `EwmaVar`                | EWMA volatility (RiskMetrics λ=0.94); reacts to clustering. |
 
-All take `confidence` and `horizon`, accept `prices=` or `returns=`, and
+All take `confidence` and `horizon`, run on a `returns` series (compute log
+returns from prices yourself, e.g. `np.diff(np.log(prices))`), and
 auto-calibrate from the data. The `horizon` is computed **directly** at the
 holding period — the h-day VaR is the quantile of the h-day loss distribution,
 not a one-day figure scaled by √h (which is plainly wrong for mean-reverting

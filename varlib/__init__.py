@@ -28,28 +28,32 @@ dict_keys(['returns', 'losses', 'sorted_losses', 'var', 'es', ...])
 from varlib.base import VarModel, VarResult
 from varlib.backtest.rolling import rolling_var, rolling_backtest
 from varlib.report import BacktestReport, run_backtest
-from varlib.models.historical import HistoricalVar, historical_var, historical_es
-from varlib.models.historical_bootstrap import (
+from varlib.models.non_parametric.historical import (
+    HistoricalVar,
+    historical_var,
+    historical_es,
+)
+from varlib.models.non_parametric.bootstrap import (
     HistoricalBootstrapVar,
     historical_bootstrap_var,
     historical_bootstrap_var_es,
 )
-from varlib.models.parametric_brownian import (
+from varlib.models.parametric.brownian import (
     ParametricBrownianVar,
     parametric_brownian_var,
     parametric_brownian_var_es,
 )
-from varlib.models.parametric_ou import (
+from varlib.models.parametric.ou import (
     ParametricOuVar,
     parametric_ou_var,
     parametric_ou_var_es,
 )
-from varlib.models.parametric_jump import (
+from varlib.models.parametric.jump import (
     ParametricJumpVar,
     parametric_jump_var,
     parametric_jump_var_es,
 )
-from varlib.models.ewma import (
+from varlib.models.parametric.ewma import (
     EwmaVar,
     ewma_var,
     ewma_var_es,

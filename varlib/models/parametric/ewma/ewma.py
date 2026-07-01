@@ -90,7 +90,7 @@ from typing import Any
 import numpy as np
 
 from varlib.base import VarModel
-from varlib.models.parametric_brownian import normal_pdf, normal_quantile
+from varlib.models.parametric.brownian.brownian import normal_pdf, normal_quantile
 
 
 class EwmaVar(VarModel):
@@ -133,7 +133,7 @@ def ewma_var_es(
     horizon: int = 1,
 ) -> tuple[float, float]:
     """
-    Compute EWMA VaR and ES at `horizon`, as positive loss fractions.
+    Compute EWMA VaR and ES at `horizon`
 
     Implements RiskMetrics(TM) -- Technical Document, 4th ed. (1996); page
     citations below are the document's printed pages. The conditional one-day
@@ -165,7 +165,7 @@ def ewma_var_es(
     if n < 2:
         raise ValueError("Need at least two returns for an EWMA volatility. But really, a lot more than two for a meaningful estimate.")
 
-    # Step 1: the drift
+    # Step 1: Drift
     if mu is None:
         mu = float(np.mean(returns))
         steps["mu_source"] = "estimated"

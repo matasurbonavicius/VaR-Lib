@@ -27,10 +27,12 @@ OUTPUT = os.path.join(HERE, "output")
 
 def main():
     prices = pd.read_csv(DATA, parse_dates=["Date"], index_col="Date")["AAPL"].dropna()
+    # Models consume returns; log returns keep the price index (minus day one).
+    returns = np.log(prices / prices.shift(1)).dropna()
     os.makedirs(OUTPUT, exist_ok=True)
 
     model = HistoricalVar(confidence=0.99)
-    losses, forecasts, dates = rolling_backtest(model, prices=prices, window=250)
+    losses, forecasts, dates = rolling_backtest(model, returns=returns, window=250)
 
     # The 0/1 breach flags are a traced intermediate of count_breaches.
     summary = count_breaches(losses, forecasts)

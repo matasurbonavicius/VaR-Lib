@@ -24,7 +24,7 @@ from typing import Any, NamedTuple
 import numpy as np
 
 from varlib.base import VarModel
-from varlib.models.historical import historical_var, historical_es
+from varlib.models.non_parametric.historical.historical import historical_var, historical_es
 
 
 class JumpParameters(NamedTuple):

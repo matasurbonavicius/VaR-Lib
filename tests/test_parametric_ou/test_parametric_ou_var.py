@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from varlib import ParametricOuVar, parametric_ou_var
-from varlib.models.parametric_ou import OuParameters
+from varlib.models.parametric.ou import OuParameters
 from tests.test_parametric_ou.test_estimate_ou_parameters import simulate_ou
 
 
@@ -54,7 +54,7 @@ def test_es_greater_than_var_and_traced():
 def test_es_matches_cumulative_gaussian_form():
     # With known params at horizon 1, S_1 = x_1 has mean expected_sum and std
     # sigma, so ES = -expected_sum + sigma * pdf(z) / 0.01.
-    from varlib.models.parametric_brownian import normal_quantile, normal_pdf
+    from varlib.models.parametric.brownian import normal_quantile, normal_pdf
     params = OuParameters(kappa=0.5, theta=0.0, sigma=0.02,
                           b=np.exp(-0.5), last_value=0.0)
     # last_value == theta => expected_sum == 0, so ES = sigma*pdf(z)/0.01.

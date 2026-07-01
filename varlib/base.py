@@ -4,29 +4,23 @@ The contract that every VaR model in this library obeys.
 `VarResult`  -- the standard output: one number, plus every intermediate that
                was used to compute it.
 `VarModel`   -- the standard input/output abstract class. A model is given a
-               price series *or* a return series, and must produce a
-               `VarResult`. Subclasses implement exactly one method, `_compute`,
-               which does the actual maths and fills the trace dictionary.
+               return series and must produce a `VarResult`. Subclasses
+               implement exactly one method, `_compute`, which does the actual
+               maths and fills the trace dictionary.
 
-Why this shape?
----------------
-Every model becomes interchangeable. The backtester does not care whether it is
-running Historical VaR or jump-diffusion VaR -- it just calls `.run(...)` and
-reads `result.value`. At the same time, nothing is hidden: `result.steps`
-contains every named intermediate, so a reviewer can check the calculation
-without reading the source.
+Returns are the currency of this library: every model consumes log returns and
+nothing else. If you start from prices, compute the log returns yourself first
+(e.g. ``np.log(prices / prices.shift(1)).dropna()``) and pass them in.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
-
-from varlib._returns import to_returns
 
 
 @dataclass
@@ -95,24 +89,8 @@ class VarModel(ABC):
 
     A model is constructed with its parameters (confidence, horizon, ...) and is
     then `run` against data. The base class handles everything that is common to
-    all models -- input validation and optional price-to-return conversion -- so
-    each concrete model only has to express its own formula.
-
-    Horizon handling
-    ----------------
-    The holding period (``self.horizon``, in number of return observations) is
-    handled *inside each model*, not by the base class. A model computes the VaR
-    directly at its horizon: a 10-day VaR is the quantile of the 10-day loss
-    distribution, built from the data the model's assumptions imply (overlapping
-    10-day historical returns, a Normal with 10-day mean and variance, the OU
-    10-step-ahead conditional law, a simulated 10-day path, ...).
-
-    This replaces the old square-root-of-time shortcut (one-day VaR times
-    ``sqrt(horizon)``). sqrt-of-time is only exact for i.i.d. zero-drift returns;
-    it is wrong for mean-reverting (OU) series, ignores drift over long horizons,
-    and cannot be backtested coherently against true h-day losses. Computing the
-    h-day distribution directly is both more correct and what a regulator expects
-    to see (Basel market-risk VaR is a 10-day figure).
+    all models -- input validation and cleaning -- so each concrete model only
+    has to express its own formula.
 
     Subclasses implement `_compute(returns, steps)`:
       * `returns` is a clean 1-D numpy array of per-period (one-day) returns.
@@ -134,21 +112,18 @@ class VarModel(ABC):
 
     # -- public API ---------------------------------------------------------
 
-    def run(
-        self,
-        returns: Optional[Any] = None,
-        prices: Optional[Any] = None,
-    ) -> VarResult:
+    def run(self, returns: Any) -> VarResult:
         """
-        Compute VaR from either a return series or a price series.
+        Compute VaR from a return series.
 
-        Provide exactly one of `returns` or `prices`. If `prices` is given it is
-        converted to log returns first (the conversion is itself traced).
+        `returns` is a series of per-period log returns (a numpy array, list, or
+        pandas Series). If you have prices, compute the log returns yourself
+        first (e.g. ``np.log(prices / prices.shift(1)).dropna()``).
         """
         steps: dict[str, Any] = {}
 
         # Step 1: obtain a clean 1-D array of per-period returns.
-        clean_returns = self._prepare_returns(returns, prices, steps)
+        clean_returns = self._prepare_returns(returns, steps)
 
         # Step 2: run the concrete model's formula on those returns. Every model
         # returns both its VaR and its ES (the average loss beyond the VaR),
@@ -183,20 +158,15 @@ class VarModel(ABC):
 
     def _prepare_returns(
         self,
-        returns: Optional[Any],
-        prices: Optional[Any],
+        returns: Any,
         steps: dict[str, Any],
     ) -> np.ndarray:
-        """Validate inputs and return a clean 1-D array of returns."""
-        if (returns is None) == (prices is None):
-            raise ValueError("Provide exactly one of `returns` or `prices`.")
+        """Validate the input and return a clean 1-D array of returns."""
+        if returns is None:
+            raise ValueError("`returns` is required.")
 
-        if prices is not None:
-            # Conversion is traced inside to_returns via the steps dict.
-            clean = to_returns(prices, steps=steps)
-        else:
-            clean = _as_clean_array(returns)
-            steps["returns"] = clean
+        clean = _as_clean_array(returns)
+        steps["returns"] = clean
 
         if clean.size == 0:
             raise ValueError("No return observations after cleaning.")

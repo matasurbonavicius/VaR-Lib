@@ -8,6 +8,6 @@ equation-by-equation mapping to the document's printed pages and the noted
 departures from the literal model.
 """
 
-from varlib.models.ewma.ewma import EwmaVar, ewma_var, ewma_var_es
+from varlib.models.parametric.ewma.ewma import EwmaVar, ewma_var, ewma_var_es
 
 __all__ = ["EwmaVar", "ewma_var", "ewma_var_es"]

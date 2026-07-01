@@ -18,6 +18,7 @@ Every printed number is also a traced intermediate via `result.steps` /
 
 import os
 
+import numpy as np
 import pandas as pd
 
 from varlib import (
@@ -56,15 +57,18 @@ def main():
         "Parametric jump": ParametricJumpVar(CONFIDENCE, n_simulations=20_000),
         "EWMA / RiskMetrics": EwmaVar(CONFIDENCE),
     }
+    recent_returns = np.diff(np.log(recent.to_numpy()))
     print(f"  {'Model':24s}  {'VaR':>8s}  {'ES':>8s}")
     for name, model in models.items():
-        result = model.run(prices=recent.to_numpy())
+        result = model.run(recent_returns)
         print(f"  {name:24s}  {result.value * 100:7.3f}%  "
               f"{result.expected_shortfall * 100:7.3f}%")
 
     # ---- Backtest the Historical model over the full five-year history ------
     print()
-    report = run_backtest(HistoricalVar(CONFIDENCE), prices=prices, window=250)
+    # Log returns keep the price index (minus day one) so steps stay dated.
+    returns = np.log(prices / prices.shift(1)).dropna()
+    report = run_backtest(HistoricalVar(CONFIDENCE), returns=returns, window=250)
     report.print("Backtest: rolling Historical VaR, full 2020-2024 history")
 
 
