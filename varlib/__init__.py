@@ -23,17 +23,13 @@ Quick start
 >>> round(result.expected_shortfall, 4)  # the ES, always >= VaR  # doctest: +SKIP
 0.0269
 >>> result.steps.keys()  # every intermediate is here  # doctest: +SKIP
-dict_keys(['returns', 'losses', 'sorted_losses', 'var', 'es', ...])
+dict_keys(['returns', 'losses', 'var', 'tail_losses', 'es', ...])
 """
 
 from varlib.base import VarModel, VarResult
 from varlib.backtest.rolling import rolling_var, rolling_backtest
 from varlib.report import BacktestReport, run_backtest
-from varlib.models.non_parametric.historical import (
-    HistoricalVar,
-    historical_var,
-    historical_es,
-)
+from varlib.models.non_parametric.historical import HistoricalVar
 from varlib.models.non_parametric.bootstrap import (
     HistoricalBootstrapVar,
     historical_bootstrap_var,
@@ -68,8 +64,6 @@ __all__ = [
     "BacktestReport",
     "run_backtest",
     "HistoricalVar",
-    "historical_var",
-    "historical_es",
     "HistoricalBootstrapVar",
     "historical_bootstrap_var",
     "historical_bootstrap_var_es",

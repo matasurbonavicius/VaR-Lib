@@ -16,28 +16,37 @@ from varlib import (
     ParametricOuVar,
     ParametricJumpVar,
 )
-from varlib.base import overlapping_cumulative_returns
+from varlib.base import cumulative_returns
 
 
 # -- the cumulative-returns helper -----------------------------------------
 
 
-def test_overlapping_cumulative_returns_sums_windows():
+def test_cumulative_returns_sums_overlapping_windows():
     r = np.array([0.1, 0.2, 0.3, 0.4, 0.5])
-    out = overlapping_cumulative_returns(r, 3)
+    out = cumulative_returns(r, 3)
     # windows: 0.1+0.2+0.3, 0.2+0.3+0.4, 0.3+0.4+0.5
     assert np.allclose(out, [0.6, 0.9, 1.2])
     assert out.size == r.size - 3 + 1
 
 
-def test_overlapping_cumulative_returns_horizon_one_is_identity():
+def test_cumulative_returns_non_overlapping_uses_disjoint_blocks():
+    r = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
+    out = cumulative_returns(r, 3, overlapping=False)
+    # disjoint blocks: 0.1+0.2+0.3, 0.4+0.5+0.6; the trailing 0.7 is dropped.
+    assert np.allclose(out, [0.6, 1.5])
+    assert out.size == r.size // 3
+
+
+def test_cumulative_returns_horizon_one_is_identity():
     r = np.array([0.1, -0.2, 0.3])
-    assert np.allclose(overlapping_cumulative_returns(r, 1), r)
+    assert np.allclose(cumulative_returns(r, 1), r)
+    assert np.allclose(cumulative_returns(r, 1, overlapping=False), r)
 
 
-def test_overlapping_cumulative_returns_needs_enough_data():
+def test_cumulative_returns_needs_enough_data():
     with pytest.raises(ValueError):
-        overlapping_cumulative_returns(np.array([0.1, 0.2]), 5)
+        cumulative_returns(np.array([0.1, 0.2]), 5)
 
 
 # -- horizon=1 must reduce to the one-day result for every model ------------
@@ -81,7 +90,7 @@ def test_ten_day_var_larger_than_one_day_for_diffusive_models():
 def test_historical_ten_day_matches_manual_cumulative_quantile():
     returns = np.random.default_rng(2).normal(0, 0.01, 800)
     v10 = HistoricalVar(0.99, horizon=10).run(returns=returns).value
-    cum = overlapping_cumulative_returns(returns, 10)
+    cum = cumulative_returns(returns, 10)
     assert v10 == pytest.approx(float(np.quantile(-cum, 0.99, method="linear")))
 
 

@@ -174,19 +174,60 @@ class VarModel(ABC):
         return clean
 
 
+# -- shared VaR/ES definition -----------------------------------------------
+
+
+def var_es_from_returns(
+    returns: np.ndarray, confidence: float
+) -> tuple[float, float]:
+    """The empirical VaR and ES of a return sample, as positive loss fractions.
+
+    Every model reduces to this once it has a sample of (real or simulated)
+    returns, so the definition lives here and nowhere else:
+
+      * VaR is the loss at the confidence-level quantile (linear interpolation
+        between order statistics, the standard empirical-quantile estimator).
+      * ES  is the average of the losses at or beyond that VaR -- the expected
+        loss given a breach. If the tail is empty (tiny samples), it falls back
+        to the VaR itself.
+
+    A VaR is about losses, so returns are sign-flipped first: a -0.02 return is
+    a +0.02 loss.
+    """
+    losses = -np.asarray(returns, dtype=float)
+    var = float(np.quantile(losses, confidence, method="linear"))
+    tail_losses = losses[losses >= var]
+    es = float(np.mean(tail_losses)) if tail_losses.size else var
+    return var, es
+
+
 # -- shared horizon helpers -------------------------------------------------
 
 
-def overlapping_cumulative_returns(returns: np.ndarray, horizon: int) -> np.ndarray:
-    """Sum every window of `horizon` consecutive returns (overlapping).
+def cumulative_returns(
+    returns: np.ndarray, horizon: int, overlapping: bool = True
+) -> np.ndarray:
+    """Sum `returns` into `horizon`-period cumulative returns.
 
     Log returns are additive, so the cumulative return over `horizon` periods is
-    the sum of the per-period returns in the window. Overlapping windows use all
-    the data and give the most stable empirical h-day distribution; this is the
-    standard construction for historical h-day VaR.
+    the sum of the per-period returns in the window. There are two ways to lay
+    the windows out:
 
-    Returns an array of length ``len(returns) - horizon + 1``. For
-    ``horizon == 1`` it is the input unchanged.
+    ``overlapping=True`` (default)
+        Every window of `horizon` consecutive returns, stepping one period at a
+        time. This uses all the data and gives the most stable empirical h-day
+        distribution -- the standard construction for historical h-day VaR. The
+        cost is that neighbouring windows share days, so the samples are
+        autocorrelated. Length: ``len(returns) - horizon + 1``.
+
+    ``overlapping=False``
+        Disjoint back-to-back blocks of `horizon` returns. The windows share no
+        days, so the h-day returns are statistically independent, but there are
+        ~h times fewer of them, so the tail estimate is noisier. Any leftover
+        days at the end that don't fill a whole block are dropped. Length:
+        ``len(returns) // horizon``.
+
+    For ``horizon == 1`` the input is returned unchanged either way.
     """
     r = np.asarray(returns, dtype=float)
     if horizon <= 1:
@@ -196,6 +237,12 @@ def overlapping_cumulative_returns(returns: np.ndarray, horizon: int) -> np.ndar
             f"Need at least horizon={horizon} returns to form one cumulative "
             f"window, got {r.size}."
         )
+
+    if not overlapping:
+        # Drop the leftover tail, then sum each disjoint block of `horizon` rows.
+        n_blocks = r.size // horizon
+        return r[: n_blocks * horizon].reshape(n_blocks, horizon).sum(axis=1)
+
     # A cumulative-sum trick gives every window sum in O(n): csum[i+h] - csum[i].
     csum = np.concatenate(([0.0], np.cumsum(r)))
     return csum[horizon:] - csum[:-horizon]

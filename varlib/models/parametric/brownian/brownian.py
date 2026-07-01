@@ -23,8 +23,7 @@ from typing import Any
 import numpy as np
 from scipy.stats import norm
 
-from varlib.base import VarModel
-from varlib.models.non_parametric.historical.historical import historical_var, historical_es
+from varlib.base import VarModel, var_es_from_returns
 
 
 class ParametricBrownianVar(VarModel):
@@ -135,9 +134,10 @@ def parametric_brownian_var_es(
     simulated_returns = rng.normal(mu_h, sigma_h, size=n_simulations)
     steps["simulated_returns"] = simulated_returns
 
-    var = historical_var(simulated_returns, confidence)
+    # VaR = loss quantile at the confidence level; ES = average loss at or
+    # beyond it.
+    var, es = var_es_from_returns(simulated_returns, confidence)
     steps["var"] = var
-    es = historical_es(simulated_returns, confidence, var)
     steps["es"] = es
 
     return var, es

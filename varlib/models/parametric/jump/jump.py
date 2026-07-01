@@ -23,8 +23,7 @@ from typing import Any, NamedTuple
 
 import numpy as np
 
-from varlib.base import VarModel
-from varlib.models.non_parametric.historical.historical import historical_var, historical_es
+from varlib.base import VarModel, var_es_from_returns
 
 
 class JumpParameters(NamedTuple):
@@ -133,15 +132,10 @@ def parametric_jump_var_es(
         simulated_returns = daily_returns
     steps["simulated_returns"] = simulated_returns
 
-    # Step 3: the VaR is the empirical quantile of the simulated losses.
-    # We reuse Historical VaR on the simulated sample -- same definition, so
-    # the two methods are guaranteed consistent.
-    var = historical_var(simulated_returns, confidence)
+    # Steps 3-4: VaR is the empirical quantile of the simulated losses; ES is
+    # the average simulated loss at or beyond that VaR.
+    var, es = var_es_from_returns(simulated_returns, confidence)
     steps["var"] = var
-
-    # Step 4: the ES is the average simulated loss beyond that VaR, again via
-    # the Historical definition applied to the same simulated sample.
-    es = historical_es(simulated_returns, confidence, var)
     steps["es"] = es
 
     return var, es

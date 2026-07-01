@@ -30,8 +30,7 @@ from typing import Any, NamedTuple
 
 import numpy as np
 
-from varlib.base import VarModel
-from varlib.models.non_parametric.historical.historical import historical_var, historical_es
+from varlib.base import VarModel, var_es_from_returns
 
 
 class OuParameters(NamedTuple):
@@ -152,11 +151,10 @@ def parametric_ou_var_es(
         cumulative += x
     steps["simulated_returns"] = cumulative
 
-    # Step 3: VaR and ES off the simulated sample, via the Historical definition
-    # (VaR = loss quantile, ES = average loss beyond it) -- same as every model.
-    var = historical_var(cumulative, confidence)
+    # Step 3: VaR and ES off the simulated sample (VaR = loss quantile,
+    # ES = average loss at or beyond it).
+    var, es = var_es_from_returns(cumulative, confidence)
     steps["var"] = var
-    es = historical_es(cumulative, confidence, var)
     steps["es"] = es
 
     return var, es

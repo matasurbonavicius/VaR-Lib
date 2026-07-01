@@ -14,8 +14,7 @@ from typing import Any
 
 import numpy as np
 
-from varlib.base import VarModel
-from varlib.models.non_parametric.historical.historical import historical_var, historical_es
+from varlib.base import VarModel, var_es_from_returns
 
 
 class HistoricalBootstrapVar(VarModel):
@@ -93,9 +92,8 @@ def historical_bootstrap_var_es(
             draw = rng.choice(returns, size=n, replace=True)
         else:
             draw = rng.choice(returns, size=(n, horizon), replace=True).sum(axis=1)
-        draw_var = historical_var(draw, confidence)         # no per-draw trace
-        resample_vars[i] = draw_var
-        resample_es[i] = historical_es(draw, confidence, draw_var)
+        # This resample's plain Historical VaR and ES (no per-draw trace).
+        resample_vars[i], resample_es[i] = var_es_from_returns(draw, confidence)
     steps["resample_vars"] = resample_vars
     steps["resample_es"] = resample_es
 

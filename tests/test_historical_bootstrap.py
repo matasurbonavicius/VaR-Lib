@@ -3,13 +3,13 @@
 import numpy as np
 import pytest
 
-from varlib import HistoricalBootstrapVar, historical_bootstrap_var, historical_var
+from varlib import HistoricalBootstrapVar, HistoricalVar, historical_bootstrap_var
 
 
 def test_bootstrap_is_close_to_plain_historical():
     rng = np.random.default_rng(3)
     returns = rng.normal(0, 0.02, 4000)
-    plain = historical_var(returns, 0.99)
+    plain = HistoricalVar(0.99).run(returns=returns).value
     boot = historical_bootstrap_var(returns, 0.99, n_resamples=2000, seed=0)
     # The bootstrap mean should sit close to the plain estimate.
     assert boot == pytest.approx(plain, rel=0.1)
@@ -46,8 +46,7 @@ def test_rejects_bad_resample_count():
 def test_bootstrap_es_is_close_to_plain_es():
     rng = np.random.default_rng(50)
     returns = rng.normal(0, 0.02, 4000)
-    from varlib import historical_es
-    plain = historical_es(returns, 0.99)
+    plain = HistoricalVar(0.99).run(returns=returns).expected_shortfall
     result = HistoricalBootstrapVar(0.99, n_resamples=2000, seed=0).run(returns=returns)
     assert result.expected_shortfall == pytest.approx(plain, rel=0.1)
 

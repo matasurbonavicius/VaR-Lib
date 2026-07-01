@@ -47,9 +47,9 @@ def test_estimates_mu_and_sigma_when_not_given():
 def test_gaussian_var_close_to_historical_on_normal_data():
     rng = np.random.default_rng(8)
     returns = rng.normal(0, 0.02, 100_000)
-    from varlib import historical_var
+    from varlib import HistoricalVar
     g = parametric_brownian_var(returns, 0.99)
-    h = historical_var(returns, 0.99)
+    h = HistoricalVar(0.99).run(returns=returns).value
     assert g == pytest.approx(h, rel=0.05)
 
 
@@ -81,9 +81,9 @@ def test_es_greater_than_var():
 def test_es_close_to_historical_es_on_normal_data():
     rng = np.random.default_rng(40)
     returns = rng.normal(0, 0.02, 100_000)
-    from varlib import historical_es
+    from varlib import HistoricalVar
     g = ParametricBrownianVar(0.99).run(returns=returns).expected_shortfall
-    h = historical_es(returns, 0.99)
+    h = HistoricalVar(0.99).run(returns=returns).expected_shortfall
     assert g == pytest.approx(h, rel=0.05)
 
 

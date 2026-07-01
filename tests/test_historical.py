@@ -3,14 +3,14 @@
 import numpy as np
 import pytest
 
-from varlib import HistoricalVar, historical_var, historical_es
+from varlib import HistoricalVar
 from varlib.base import VarResult
 
 
 def test_var_is_known_quantile_of_uniform_losses():
     # Returns from -0.01 .. -0.000 (so losses 0.000 .. 0.01, uniform-ish).
     returns = np.linspace(-0.01, 0.0, 101)
-    var = historical_var(returns, confidence=0.99)
+    var = HistoricalVar(0.99).run(returns=returns).value
     # The 99% loss quantile of losses in [0, 0.01] should be near 0.0099.
     assert var == pytest.approx(0.0099, abs=1e-4)
 
@@ -18,20 +18,17 @@ def test_var_is_known_quantile_of_uniform_losses():
 def test_higher_confidence_gives_higher_var():
     rng = np.random.default_rng(1)
     returns = rng.normal(0, 0.02, 5000)
-    v95 = historical_var(returns, 0.95)
-    v99 = historical_var(returns, 0.99)
+    v95 = HistoricalVar(0.95).run(returns=returns).value
+    v99 = HistoricalVar(0.99).run(returns=returns).value
     assert v99 > v95
 
 
 def test_steps_are_traced():
     returns = np.array([-0.03, -0.01, 0.0, 0.01, 0.02])
-    steps = {}
-    historical_var(returns, 0.95, steps)
-    assert set(steps) >= {"losses", "sorted_losses", "var"}
+    steps = HistoricalVar(0.95).run(returns=returns).steps
+    assert set(steps) >= {"losses", "var"}
     # Losses are the negated returns.
     assert np.allclose(steps["losses"], -returns)
-    # Sorted losses are non-decreasing.
-    assert np.all(np.diff(steps["sorted_losses"]) >= 0)
 
 
 def test_model_returns_var_result_with_full_trace():
@@ -60,18 +57,35 @@ def test_horizon_var_is_quantile_of_cumulative_returns():
 
     # Reconstruct the 10-day cumulative returns (log returns add) and take the
     # same quantile directly.
-    from varlib.base import overlapping_cumulative_returns
+    from varlib.base import cumulative_returns
 
-    cum = overlapping_cumulative_returns(returns, 10)
+    cum = cumulative_returns(returns, 10)
     expected = float(np.quantile(-cum, 0.99, method="linear"))
     assert ten_day == pytest.approx(expected)
+
+
+def test_horizon_var_honours_non_overlapping_flag():
+    # With overlapping=False the model reads the quantile off disjoint h-day
+    # blocks, so it must match the quantile of the non-overlapping cumulative
+    # returns -- and differ from the overlapping default.
+    from varlib.base import cumulative_returns
+
+    returns = np.random.default_rng(3).normal(0, 0.01, 1000)
+    ten_day = HistoricalVar(0.99, horizon=10, overlapping=False).run(returns=returns).value
+
+    cum = cumulative_returns(returns, 10, overlapping=False)
+    expected = float(np.quantile(-cum, 0.99, method="linear"))
+    assert ten_day == pytest.approx(expected)
+
+    overlapping = HistoricalVar(0.99, horizon=10).run(returns=returns).value
+    assert ten_day != pytest.approx(overlapping)
 
 
 def test_horizon_one_matches_plain_one_day():
     # horizon=1 must reduce exactly to the ordinary one-day VaR.
     returns = np.random.default_rng(2).normal(0, 0.01, 1000)
     h1 = HistoricalVar(0.99, horizon=1).run(returns=returns).value
-    plain = historical_var(returns, 0.99)
+    plain = float(np.quantile(-returns, 0.99, method="linear"))
     assert h1 == pytest.approx(plain)
 
 
@@ -89,8 +103,8 @@ def test_es_is_mean_of_losses_beyond_var():
     # Losses 1..100; at 95% confidence the VaR is ~95, so ES is the mean of the
     # losses at or beyond it (96..100 -> 98).
     returns = -np.arange(1.0, 101.0)  # losses 1..100
-    var = historical_var(returns, 0.95)
-    es = historical_es(returns, 0.95, var)
+    result = HistoricalVar(0.95).run(returns=returns)
+    var, es = result.value, result.expected_shortfall
     tail = np.arange(1.0, 101.0)
     expected = tail[tail >= var].mean()
     assert es == pytest.approx(expected)
@@ -106,7 +120,6 @@ def test_es_is_traced_in_result():
     returns = np.random.default_rng(1).normal(0, 0.01, 1000)
     result = HistoricalVar(0.99).run(returns=returns)
     assert "es" in result.steps
-    assert "es_threshold" in result.steps
     # The reported ES is the (one-day) ES computed by the model.
     assert result.expected_shortfall == pytest.approx(result.steps["es"])
 

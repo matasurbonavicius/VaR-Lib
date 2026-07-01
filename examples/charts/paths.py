@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from varlib.models.non_parametric.historical import historical_var
+from varlib.base import var_es_from_returns
 from varlib.models.parametric.jump.jump import estimate_jump_parameters, _sum_jumps
 from varlib.plotting import paths_chart
 
@@ -55,7 +55,7 @@ def main():
     ]
     fig, axes = plt.subplots(len(rows), 1, figsize=(10, 8))
     for ax, (name, daily, color) in zip(axes, rows):
-        var = historical_var(daily.sum(axis=1), CONFIDENCE)   # VaR off the h-day sums
+        var, _ = var_es_from_returns(daily.sum(axis=1), CONFIDENCE)  # VaR off the h-day sums
         paths_chart(daily, var, CONFIDENCE, title=name, color=color, ax=ax)
 
     fig.suptitle(f"{N_PATHS:,} simulated {HORIZON}-day paths -> the loss tail the VaR "
