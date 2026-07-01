@@ -20,28 +20,33 @@ test, and writes this page (`examples/full_backtest.py`):
 
 ![Backtest dashboard](examples/output/dashboard_historical.png)
 
-The same data, every model (`examples/single_instrument.py`):
+The same data, every model — each **estimated** (its VaR/ES today) *and*
+**graded** (rolled through history, run through every backtest), so you can see
+which number to trust (`examples/single_instrument.py`):
 
 ```
-VaR and ES estimated on 2023-01-03 .. 2024-12-31 (502 days):
+  Model                           VaR       ES  Breaches    Rate      Kupiec          DQ    Basel  Verdict
+  --------------------------------------------------------------------------------------------------------
+  Historical                    2.97%    4.05%        11   1.09%  ok  p=0.77  REJ p=0.00    GREEN     FAIL
+  Age-weighted historical       2.91%    3.46%        12   1.19%  ok  p=0.55  ok  p=0.20    GREEN     PASS
+  Historical bootstrap          3.23%    3.91%        11   1.09%  ok  p=0.77  REJ p=0.00    GREEN     FAIL
+  Parametric Brownian           3.01%    3.47%        13   1.29%  ok  p=0.37  REJ p=0.00    GREEN     FAIL
+  Parametric OU                 3.06%    3.52%        12   1.19%  ok  p=0.55  REJ p=0.00    GREEN     FAIL
+  Parametric jump               2.94%    4.51%        13   1.29%  ok  p=0.37  REJ p=0.00    GREEN     FAIL
+  EWMA / RiskMetrics            2.31%    2.66%        19   1.89%  REJ p=0.01  REJ p=0.00   YELLOW     FAIL
+  Filtered historical (FHS)     3.68%    4.19%        14   1.39%  ok  p=0.24  ok  p=0.11    GREEN     PASS
 
-  Model                            VaR        ES
-  Historical                    2.969%    4.048%
-  Age-weighted historical       2.910%    3.463%
-  Historical bootstrap          3.227%    3.908%
-  Parametric Brownian           3.006%    3.465%
-  Parametric OU                 3.060%    3.519%
-  Parametric jump               2.936%    4.509%
-  EWMA / RiskMetrics            2.308%    2.664%
-  Filtered historical (FHS)     3.678%    4.190%
-
-Backtest: rolling Historical VaR, full 2020-2024 history  (confidence = 99%)
-  Observations    : 1007
-  Breaches        : 11 (rate 1.09%, expected 1.00%)
-  Kupiec POF      : p = 0.772 -> OK
-  Dynamic Quantile: p = 0.000 -> REJECT
-  Basel zone      : GREEN (green<= 15, red>= 24)
+  1007 rolling forecasts at 99%  (expected breach rate 1.00%).
+  VERDICT = PASS only if Kupiec ok AND DQ ok AND Basel green.
 ```
+
+The VaR number alone tells you nothing about whether to trust it — accuracy is a
+property of the model *rolled through history*. Note the trap on the first row:
+plain **Historical** gets the breach *count* right (Kupiec ok) but its breaches
+**cluster** in the 2020 crash (DQ rejected), because a static quantile can't react
+to a volatility spike. Only the volatility-aware models — **Age-weighted** and
+**FHS** — pass all three tests here. And the lowest VaR (**EWMA**, 2.31%) is the
+*least* safe: it breaches 19 times and lands in the yellow Basel zone.
 
 ## Install
 
@@ -160,7 +165,7 @@ directly, so you can read any one top to bottom. To try another model, change th
 one line that builds it.
 
 ```bash
-python examples/single_instrument.py        # every model + a backtest, console
+python examples/single_instrument.py        # every model, estimated + graded (the table above)
 python examples/full_backtest.py            # the dashboard page above (PNG + PDF)
 python examples/charts/breaches.py          # each chart on its own
 python examples/charts/paths.py             # the simulated-paths picture above
