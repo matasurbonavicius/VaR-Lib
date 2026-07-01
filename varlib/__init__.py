@@ -29,8 +29,11 @@ dict_keys(['returns', 'losses', 'var', 'tail_losses', 'es', ...])
 from varlib.base import VarModel, VarResult
 from varlib.backtest.rolling import rolling_var, rolling_backtest
 from varlib.report import BacktestReport, run_backtest
-from varlib.models.non_parametric.historical import HistoricalVar
-from varlib.models.non_parametric.bootstrap import (
+from varlib.models.non_parametric.historical_simulation import HistoricalVar
+from varlib.models.non_parametric.aw_historical_simulation import (
+    AgeWeightedHistoricalVar,
+)
+from varlib.models.non_parametric.historical_bootstrap import (
     HistoricalBootstrapVar,
     historical_bootstrap_var,
     historical_bootstrap_var_es,
@@ -64,6 +67,7 @@ __all__ = [
     "BacktestReport",
     "run_backtest",
     "HistoricalVar",
+    "AgeWeightedHistoricalVar",
     "HistoricalBootstrapVar",
     "historical_bootstrap_var",
     "historical_bootstrap_var_es",

@@ -23,6 +23,7 @@ import pandas as pd
 
 from varlib import (
     HistoricalVar,
+    AgeWeightedHistoricalVar,
     HistoricalBootstrapVar,
     ParametricBrownianVar,
     ParametricOuVar,
@@ -51,6 +52,7 @@ def main():
 
     models = {
         "Historical": HistoricalVar(CONFIDENCE),
+        "Age-weighted historical": AgeWeightedHistoricalVar(CONFIDENCE, lambda_decay=0.98),
         "Historical bootstrap": HistoricalBootstrapVar(CONFIDENCE, n_resamples=500),
         "Parametric Brownian": ParametricBrownianVar(CONFIDENCE),
         "Parametric OU": ParametricOuVar(CONFIDENCE),

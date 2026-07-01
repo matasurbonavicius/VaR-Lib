@@ -3,8 +3,19 @@
 import numpy as np
 import pytest
 
-from varlib import HistoricalVar
+from varlib import AgeWeightedHistoricalVar, HistoricalVar
 from varlib.base import VarResult
+
+
+def test_age_weighted_with_lambda_one_matches_historical():
+    # Age-weighting with lambda=1 puts flat weights on every observation, so it
+    # is just Historical VaR -- the two must agree, up to the differing quantile
+    # convention (plain HS interpolates order statistics; AW uses BRW's
+    # half-weight centering).
+    returns = np.random.default_rng(42).normal(0, 0.01, 2000)
+    plain = HistoricalVar(0.99).run(returns=returns).value
+    aw = AgeWeightedHistoricalVar(0.99, lambda_decay=1.0).run(returns=returns).value
+    assert aw == pytest.approx(plain, rel=0.01)
 
 
 def test_var_is_known_quantile_of_uniform_losses():
