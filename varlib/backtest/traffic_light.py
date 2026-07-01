@@ -2,11 +2,19 @@
 Breach counting and the Basel traffic-light test
 
 Regulators do not run a likelihood-ratio test; they count breaches over the last
-250 trading days and place the model in a zone:
+250 *trading days* and place the model in a zone:
 
   * Green  (0-4 breaches at 99%): the model is fine.
   * Yellow (5-9 breaches):        watch it; capital add-on increases with count.
   * Red    (10+ breaches):        the model is rejected.
+
+The 250 is a fixed regulatory constant -- one year of daily observations -- and
+the zone boundaries below are derived for exactly that count. It is a *daily*
+test: each observation is one trading day's forecast-vs-realised, so a series
+sampled at any finer frequency (intraday bars, minutely, ...) must be aggregated
+to daily returns before this test is meaningful. Feeding it 1000+ observations,
+or intraday bars, silently widens the "green" band and stops being the Basel
+test.
 
 Reference: https://www.bis.org/publ/bcbs22.pdf
 """
@@ -98,9 +106,12 @@ def breach_count(realised_losses: np.ndarray, var_forecasts: np.ndarray) -> Brea
     return count_breaches(realised_losses, var_forecasts)
 
 
+BASEL_WINDOW = 250  # regulatory constant: one year of daily observations
+
+
 def basel_traffic_light(
     n_breaches: int,
-    n_observations: int = 250,
+    n_observations: int = BASEL_WINDOW,
     confidence: float = 0.99,
 ) -> TrafficLightResult:
     """
@@ -109,6 +120,14 @@ def basel_traffic_light(
     The zone boundaries are derived from the cumulative binomial distribution of
     the breach count under a correctly specified model, exactly as in the Basel
     framework.
+
+    ``n_observations`` should be the Basel window of 250 trading days (the
+    default). It is exposed only for testing and for confidence levels that
+    genuinely use a different regulatory window -- passing the full length of a
+    multi-year backtest here is a mistake: it widens the "green" band far beyond
+    0-4 breaches and stops being the Basel test. To zone a long backtest, use
+    :func:`basel_traffic_light_trailing`, which counts breaches over just the
+    most recent 250 days.
     """
     steps: dict[str, Any] = {}
 
@@ -153,3 +172,35 @@ def basel_traffic_light(
         red_min=red_min,
         steps=steps,
     )
+
+
+def basel_traffic_light_trailing(
+    realised_losses: np.ndarray,
+    var_forecasts: np.ndarray,
+    confidence: float = 0.99,
+    window: int = BASEL_WINDOW,
+) -> TrafficLightResult:
+    """
+    Basel traffic-light zone over the *most recent* ``window`` trading days.
+
+    The Basel test is a rolling 250-day check, not a full-history one: it counts
+    breaches over the last ``window`` observations and zones that count against
+    the fixed 250-day boundaries. Feeding a whole multi-year backtest to
+    :func:`basel_traffic_light` instead widens the green band and is not the
+    Basel test.
+
+    The inputs are the aligned daily ``(realised_losses, var_forecasts)`` from a
+    roll (see :func:`varlib.backtest.rolling_backtest`); each observation is one
+    trading day. If fewer than ``window`` observations are available, all of them
+    are used and ``n_observations`` reflects the shorter count.
+    """
+    realised_losses = np.asarray(realised_losses, dtype=float)
+    var_forecasts = np.asarray(var_forecasts, dtype=float)
+    if realised_losses.shape != var_forecasts.shape:
+        raise ValueError("realised_losses and var_forecasts must be the same length.")
+    if realised_losses.size == 0:
+        raise ValueError("Need at least one observation.")
+
+    tail = min(window, realised_losses.size)
+    recent = count_breaches(realised_losses[-tail:], var_forecasts[-tail:])
+    return basel_traffic_light(recent.n_breaches, tail, confidence)

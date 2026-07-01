@@ -12,7 +12,7 @@ from typing import Any, Optional, Sequence
 
 import numpy as np
 
-from varlib.backtest.traffic_light import basel_traffic_light, count_breaches
+from varlib.backtest.traffic_light import basel_traffic_light_trailing, count_breaches
 from varlib.plotting._style import (
     enforce_horizontal_margins,
     get_pyplot,
@@ -83,7 +83,8 @@ def backtest_dashboard(
     # Derive the breach sequence and traffic-light zone once, up front.
     summary = count_breaches(losses, forecasts)
     breach_flags = np.asarray(summary.steps["is_breach"], dtype=float)
-    light = basel_traffic_light(summary.n_breaches, summary.n_observations, confidence)
+    # Basel is a trailing-250-day test, not a full-history one.
+    light = basel_traffic_light_trailing(losses, forecasts, confidence)
 
     if a4:
         # A4 page laid out on a single, consistent margin grid so the whole

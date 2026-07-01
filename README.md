@@ -36,7 +36,9 @@ which number to trust (`examples/single_instrument.py`):
   EWMA / RiskMetrics            2.31%    2.66%        19   1.89%  REJ p=0.01  REJ p=0.00   YELLOW     FAIL
   Filtered historical (FHS)     3.68%    4.19%        14   1.39%  ok  p=0.24  ok  p=0.11    GREEN     PASS
 
-  1007 rolling forecasts at 99%  (expected breach rate 1.00%).
+  1007 rolling daily forecasts at 99%  (expected breach rate 1.00%).
+  Kupiec & DQ use the full history; Basel zones only the most recent
+  250 trading days (the regulatory window).
   VERDICT = PASS only if Kupiec ok AND DQ ok AND Basel green.
 ```
 

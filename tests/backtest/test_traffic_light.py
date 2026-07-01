@@ -3,7 +3,11 @@
 import numpy as np
 import pytest
 
-from varlib.backtest import basel_traffic_light, count_breaches
+from varlib.backtest import (
+    basel_traffic_light,
+    basel_traffic_light_trailing,
+    count_breaches,
+)
 
 
 def test_count_breaches_flags_exceedances():
@@ -45,3 +49,39 @@ def test_rejects_impossible_counts():
 def test_mismatched_lengths_rejected():
     with pytest.raises(ValueError):
         count_breaches(np.array([0.1, 0.2]), np.array([0.1]))
+
+
+def test_trailing_zones_only_the_last_250():
+    # A long backtest: 10 breaches spread over the first 750 days (an old crisis)
+    # and only 2 in the most recent 250. Full-history zoning would swallow all 12
+    # into a wide "green" band; the trailing test must see just the recent 2.
+    n = 1000
+    forecast = np.full(n, 0.03)
+    realised = np.full(n, 0.01)          # calm by default (no breach)
+    realised[:10] = 0.05                 # 10 old breaches, outside the last 250
+    realised[[900, 950]] = 0.05          # 2 recent breaches, inside the last 250
+
+    result = basel_traffic_light_trailing(realised, forecast, 0.99)
+    assert result.n_observations == 250
+    assert result.n_breaches == 2        # only the recent window is counted
+    assert result.zone == "green"        # 2 <= 4
+
+
+def test_trailing_flags_a_recent_breach_cluster_as_red():
+    # 12 breaches all inside the most recent 250 days -> red (10+).
+    n = 1000
+    forecast = np.full(n, 0.03)
+    realised = np.full(n, 0.01)
+    realised[-12:] = 0.05
+    result = basel_traffic_light_trailing(realised, forecast, 0.99)
+    assert result.n_observations == 250
+    assert result.n_breaches == 12
+    assert result.zone == "red"
+
+
+def test_trailing_uses_all_data_when_shorter_than_window():
+    # Fewer than 250 observations: zone against what we have, not a padded 250.
+    forecast = np.full(100, 0.03)
+    realised = np.full(100, 0.01)
+    result = basel_traffic_light_trailing(realised, forecast, 0.99)
+    assert result.n_observations == 100

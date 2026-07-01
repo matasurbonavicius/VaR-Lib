@@ -10,6 +10,7 @@ from varlib.backtest.traffic_light import (
     BreachSummary,
     TrafficLightResult,
     basel_traffic_light,
+    basel_traffic_light_trailing,
     breach_count,
     count_breaches,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "BreachSummary",
     "TrafficLightResult",
     "basel_traffic_light",
+    "basel_traffic_light_trailing",
     "breach_count",
     "count_breaches",
 ]

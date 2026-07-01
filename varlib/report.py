@@ -34,7 +34,7 @@ from varlib.backtest import (
     DynamicQuantileResult,
     KupiecResult,
     TrafficLightResult,
-    basel_traffic_light,
+    basel_traffic_light_trailing,
     count_breaches,
     dynamic_quantile_test,
     kupiec_pof_test,
@@ -275,7 +275,7 @@ def run_backtest(
         dynamic_quantile=dynamic_quantile_test(
             flags, confidence, var_forecasts=forecasts
         ),
-        traffic_light=basel_traffic_light(
-            summary.n_breaches, summary.n_observations, confidence
+        traffic_light=basel_traffic_light_trailing(
+            losses, forecasts, confidence
         ),
     )

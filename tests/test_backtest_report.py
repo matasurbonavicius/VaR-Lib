@@ -15,7 +15,7 @@ import pytest
 from varlib import HistoricalVar, ParametricJumpVar, ParametricOuVar, run_backtest
 from varlib.report import BacktestReport, _prettify
 from varlib.backtest import (
-    basel_traffic_light,
+    basel_traffic_light_trailing,
     count_breaches,
     dynamic_quantile_test,
     kupiec_pof_test,
@@ -57,9 +57,11 @@ def test_bundle_matches_running_the_pieces_by_hand():
     assert report.dynamic_quantile.p_value == (
         dynamic_quantile_test(flags, 0.99, var_forecasts=forecasts).p_value
     )
+    # Basel zones the trailing 250 days, not the full history.
     assert report.traffic_light.zone == (
-        basel_traffic_light(summary.n_breaches, summary.n_observations, 0.99).zone
+        basel_traffic_light_trailing(losses, forecasts, 0.99).zone
     )
+    assert report.traffic_light.n_observations == min(250, summary.n_observations)
 
 
 def test_confidence_comes_from_the_model():

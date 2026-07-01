@@ -20,7 +20,8 @@ failures mean opposite things -- so the honest verdict needs both.
 
   Kupiec POF        right *number* of breaches?      (fail => VaR too low/high)
   Dynamic Quantile  breaches *unpredictable*?         (fail => doesn't adapt)
-  Basel zone        supervisor's green/yellow/red     (blunt breach-count check)
+  Basel zone        supervisor's green/yellow/red     (blunt breach-count check,
+                    over the most recent 250 trading days only, per the rule)
 
 VERDICT is PASS only when a model clears all three: Kupiec ok, DQ ok, and green.
 Watch for the classic trap -- plain Historical gets the breach *count* right but
@@ -127,9 +128,11 @@ def print_table(rows, n_obs):
         )
     expected = (1 - CONFIDENCE) * 100
     print(
-        f"\n  {n_obs} rolling forecasts at {CONFIDENCE:.0%}  "
+        f"\n  {n_obs} rolling daily forecasts at {CONFIDENCE:.0%}  "
         f"(expected breach rate {expected:.2f}%).  "
         f"VaR/ES are today's estimate; the rest grade the model over history.\n"
+        f"  Kupiec & DQ use the full history; Basel zones only the most recent\n"
+        f"  250 trading days (the regulatory window).\n"
         f"  VERDICT = PASS only if Kupiec ok AND DQ ok AND Basel green."
     )
 

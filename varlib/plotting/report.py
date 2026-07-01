@@ -36,7 +36,7 @@ from typing import Any, Optional, Sequence
 
 import numpy as np
 
-from varlib.backtest.traffic_light import basel_traffic_light, count_breaches
+from varlib.backtest.traffic_light import basel_traffic_light_trailing, count_breaches
 from varlib.plotting._style import (
     enforce_horizontal_margins,
     get_pyplot,
@@ -248,7 +248,8 @@ def _build_context(losses, forecasts, expected_shortfall, dates, confidence,
     """Pre-compute everything the section renderers need, once."""
     summary = count_breaches(losses, forecasts)
     breach_flags = np.asarray(summary.steps["is_breach"], dtype=float)
-    light = basel_traffic_light(summary.n_breaches, summary.n_observations, confidence)
+    # Basel is a trailing-250-day test, not a full-history one.
+    light = basel_traffic_light_trailing(losses, forecasts, confidence)
 
     # The distribution chart wants the VaR/ES of the realised-loss sample so the
     # two lines are mutually consistent (ES >= VaR); an explicit ES overrides it
