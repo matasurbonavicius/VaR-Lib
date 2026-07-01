@@ -5,24 +5,24 @@ Did the VaR get breached about as often as it should have?
 At 99% confidence we expect a breach on about 1% of days. 
 If we see far more or far fewer, the model is mis-calibrated.
 
-Under the null hypothesis the true breach probability 
-equals the expected (1 - confidence). The statistic is
-chi-square distributed with 1 degree of freedom.
+The result of the test is to accept if
 
-    LR_pof = -2 * ln[ L(p) / L(p_hat) ]
+PValuePOF<F(TestLevel)
 
-where p is the expected breach rate and p_hat is the observed breach rate.
+and reject otherwise, where F is the cumulative distribution 
+of a chi-square variable with 1 degree of freedom.
+
+Source see: https://www.mathworks.com/help/risk/varbacktest.pof.html
+Based on: Kupiec, P. "Techniques for Verifying the Accuracy of Risk Management Models." Journal of Derivatives. Vol. 3, 1995, pp. 73 – 84.
 """
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
-
-from varlib.backtest._chi_square import chi_square_sf
+from scipy.stats import binom, chi2
 
 
 @dataclass
@@ -38,7 +38,7 @@ class KupiecResult:
     reject_at_5pct: bool
     steps: dict[str, Any] = field(default_factory=dict)
 
-    def __repr__(self) -> str:  # pragma: no cover - cosmetic
+    def __repr__(self) -> str:
         verdict = "REJECT model" if self.reject_at_5pct else "model OK"
         return (
             f"KupiecResult(breaches={self.n_breaches}/{self.n_observations}, "
@@ -80,12 +80,16 @@ def kupiec_pof_test(
     steps["expected_rate"] = expected_rate
     steps["observed_rate"] = observed_rate
 
+    # Binomial log-likelihood of seeing x breaches in n days if the true breach
+    # rate were p: log P(X=x) for X ~ Binomial(n, p). We score it at two rates
+    # and compare. scipy.stats.binom.logpmf gives this directly.
+    #
     # Step 2: log-likelihood under the null (true rate = expected_rate).
-    log_lik_null = _binomial_log_likelihood(x, n, expected_rate)
+    log_lik_null = float(binom.logpmf(x, n, expected_rate))
     steps["log_lik_null"] = log_lik_null
 
     # Step 3: log-likelihood under the alternative (true rate = observed_rate).
-    log_lik_alt = _binomial_log_likelihood(x, n, observed_rate)
+    log_lik_alt = float(binom.logpmf(x, n, observed_rate))
     steps["log_lik_alt"] = log_lik_alt
 
     # Step 4: the likelihood-ratio statistic, chi-square with 1 dof.
@@ -94,7 +98,7 @@ def kupiec_pof_test(
     steps["statistic"] = statistic
 
     # Step 5: the p-value is the chi-square (df=1) upper-tail probability.
-    p_value = chi_square_sf(statistic, df=1)
+    p_value = float(chi2.sf(statistic, df=1))
     steps["p_value"] = p_value
 
     # Step 6: reject the model if the p-value is below the significance level.
@@ -111,16 +115,3 @@ def kupiec_pof_test(
         reject_at_5pct=reject,
         steps=steps,
     )
-
-
-def _binomial_log_likelihood(x: int, n: int, p: float) -> float:
-    """
-    Log-likelihood of x breaches in n trials at breach probability p.
-
-    The binomial coefficient is constant across the two hypotheses, so it
-    cancels in the likelihood ratio; we omit it and keep only the p-dependent
-    terms: x*ln(p) + (n - x)*ln(1 - p), with the usual 0*ln(0) = 0 convention.
-    """
-    term_breach = x * math.log(p) if x > 0 else 0.0
-    term_no_breach = (n - x) * math.log(1.0 - p) if (n - x) > 0 else 0.0
-    return term_breach + term_no_breach

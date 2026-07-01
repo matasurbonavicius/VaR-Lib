@@ -28,8 +28,10 @@ def test_normal_quantile_rejects_out_of_range():
 
 def test_var_matches_closed_form_for_known_mu_sigma():
     # With mu=0, sigma=0.02, the 99% VaR is -(0 + z*sigma) = 2.32635 * 0.02.
+    # The model is now Monte Carlo, so it matches the closed form up to a small
+    # (seed-fixed) sampling error rather than exactly.
     var = parametric_brownian_var(np.zeros(10), 0.99, mu=0.0, sigma=0.02)
-    assert var == pytest.approx(2.32635 * 0.02, abs=1e-4)
+    assert var == pytest.approx(2.32635 * 0.02, rel=0.03)
 
 
 def test_estimates_mu_and_sigma_when_not_given():
@@ -60,12 +62,14 @@ def test_model_wrapper_runs():
 
 def test_es_matches_gaussian_closed_form():
     # For N(0, sigma) at 99%, ES = sigma * pdf(z) / 0.01, z = quantile(0.01).
+    # Monte Carlo recovers this within sampling error (ES, an average over the
+    # worst ~1%, is the noisiest statistic, so the tolerance is looser than VaR).
     from varlib.models.parametric.brownian import normal_quantile, normal_pdf
     sigma = 0.02
     z = normal_quantile(0.01)
     expected = sigma * normal_pdf(z) / 0.01
     result = ParametricBrownianVar(0.99, mu=0.0, sigma=sigma).run(returns=np.zeros(10))
-    assert result.expected_shortfall == pytest.approx(expected, abs=1e-6)
+    assert result.expected_shortfall == pytest.approx(expected, rel=0.05)
 
 
 def test_es_greater_than_var():

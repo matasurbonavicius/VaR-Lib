@@ -14,11 +14,9 @@ report is print-ready with no styling code at all.
     returns = np.log(prices / prices.shift(1)).dropna()
     report = run_backtest(HistoricalVar(0.99), returns=returns, window=250)
     report.print()                      # the console summary
-    report.save("backtest.pdf")         # the print-ready dashboard, fully labelled
+    report.save("backtest.pdf")         # the print-ready dashboard
 
-Every number the report shows is a plain field on the result objects it carries
-(`report.kupiec`, `report.traffic_light`, ...), so nothing is hidden behind the
-rendering. Pass your own ``title`` / ``subtitle`` / ``footer`` to override the
+Report formatting: Pass your own ``title`` / ``subtitle`` / ``footer`` to override the
 defaults.
 """
 
@@ -43,8 +41,6 @@ from varlib.backtest import (
     rolling_backtest,
 )
 
-# Pretty display names for the known model classes. Anything not listed falls
-# back to a generic prettifier, so new models still get a sensible label.
 _MODEL_LABELS = {
     "HistoricalVar": "Historical",
     "HistoricalBootstrapVar": "Historical bootstrap",
@@ -56,10 +52,8 @@ _MODEL_LABELS = {
 
 
 def _prettify(class_name: str) -> str:
-    """Human label for a model class, e.g. ``ParametricOuVar`` -> ``Parametric OU``.
-
-    Falls back to splitting CamelCase and dropping a trailing ``Var`` for any
-    class not in :data:`_MODEL_LABELS`.
+    """
+    Label for a model class, e.g. ``ParametricOuVar`` -> ``Parametric OU``.
     """
     if class_name in _MODEL_LABELS:
         return _MODEL_LABELS[class_name]
@@ -76,8 +70,7 @@ class BacktestReport:
     result object from each standard test, and the run parameters
     (model, window, horizon, overlap) needed to label a report. The renderers
     (``print`` / ``dashboard`` / ``report`` / ``save``) build a title and a
-    self-describing footer from these on their own -- callers pass data, not
-    styling.
+    self-describing footer from these.
     """
 
     confidence: float
@@ -95,17 +88,12 @@ class BacktestReport:
 
     @property
     def label(self) -> str:
-        """The model's human-readable name, e.g. ``"Parametric jump"``."""
         return _prettify(self.model_name)
 
     # -- console ------------------------------------------------------------
 
     def print(self, title: Optional[str] = None) -> None:
-        """Print the Kupiec / Dynamic Quantile / Basel summary to stdout."""
-        print(self.format(title))
-
-    def format(self, title: Optional[str] = None) -> str:
-        """Return the console summary as a string (what ``print`` writes)."""
+        """Print the summary"""
         c = self.confidence
         title = title or f"{self.label} VaR backtest"
 
@@ -128,32 +116,21 @@ class BacktestReport:
             f"(green<= {self.traffic_light.green_max}, "
             f"red>= {self.traffic_light.red_min})",
         ]
-        return "\n".join(lines)
+        print("\n".join(lines))
 
     # -- default report styling (built from the report's own contents) ------
 
     def default_title(self) -> str:
-        """The report heading, e.g. ``"Parametric jump VaR — backtest report"``."""
-        return f"{self.label} VaR — backtest report"
+        return f"{self.label} VaR | backtest report"
 
     def default_subtitle(self) -> str:
-        """The grey line under the title: horizon, window, and confidence."""
-        if self.horizon == 1:
-            horizon_phrase = "1-day"
-        else:
-            scheme = "overlapping" if self.overlap else "non-overlapping"
-            horizon_phrase = f"{self.horizon}-day ({scheme})"
-        return (f"{horizon_phrase} horizon · rolling {self.window}-day window"
-                f" · {self.confidence:.0%} confidence")
+        scheme = "overlapping" if self.overlap else "non-overlapping"
+        horizon = f"{self.horizon}-day ({scheme})"
+        return (f"{horizon} horizon | rolling {self.window}-day window")
 
     def default_footer(self) -> list[tuple[str, str]]:
-        """A labelled (category, value) grid summarising inputs, result, tests.
-
-        Returns one row per category so the page lays them out as a clean grid
-        and reads as a self-describing, reproducible record of the run -- no
-        caller-supplied text required.
-        """
-        ok = lambda reject: "OK" if not reject else "REJECT"  # noqa: E731
+        """A labelled (category, value) grid summarising inputs, result, tests."""
+        ok = lambda reject: "OK" if not reject else "REJECT"
         s, k = self.summary, self.kupiec
         dq, light = self.dynamic_quantile, self.traffic_light
         scheme = "overlapping" if self.overlap else "non-overlapping"
@@ -161,6 +138,7 @@ class BacktestReport:
 
         # Overlapping multi-day windows are serially dependent, which biases the
         # independence-based tests; flag that on the page rather than hide it.
+        # FYI best way to avoid it is set horizon 1day, then we avoid dealing with it altogether
         bias_note = (" [biased: overlapping windows]"
                      if self.horizon > 1 and self.overlap else "")
 
@@ -181,22 +159,22 @@ class BacktestReport:
         ]
 
     def _date_span(self) -> str:
-        """``'2020-01-02 – 2024-12-31 (1007 steps)'`` when dates are labelled."""
+        """2020-01-02 – 2024-12-31 (1007 steps)'"""
         n = len(self.dates)
         if not n:
             return ""
         first, last = self.dates[0], self.dates[-1]
-        fmt = lambda d: d.date() if hasattr(d, "date") else d  # noqa: E731
+        fmt = lambda d: d.date() if hasattr(d, "date") else d
         return f"{fmt(first)} – {fmt(last)} ({n} steps)"
 
     def _styling(self, kwargs: dict) -> dict:
-        """Fill in title/subtitle/footer defaults for any the caller omitted."""
+        """Fill in title/subtitle/footer defaults for any the caller omitted"""
         kwargs.setdefault("title", self.default_title())
         kwargs.setdefault("subtitle", self.default_subtitle())
         kwargs.setdefault("footer", self.default_footer())
         return kwargs
 
-    # -- charts (need matplotlib) -------------------------------------------
+    # -- charts ------------------------------------------------------------
 
     def dashboard(self, **kwargs):
         """The four core charts on one A4 figure, titled and footed by default.
@@ -215,23 +193,17 @@ class BacktestReport:
         )
 
     def report(self, sections="all", **kwargs):
-        """A selective, possibly multi-page report (Figure or list of Figures).
-
-        Title/subtitle/footer default to this report's own; the ``"tests"`` panel
-        uses its verdicts. Extra keyword arguments are forwarded to
-        ``varlib.plotting.build_report``.
-        """
+        """A selective, possibly multi-page report (Figure or list of Figures)"""
         from varlib.plotting import build_report
 
         return build_report(
             self.losses, self.forecasts, sections=sections, dates=self.dates,
-            confidence=self.confidence, backtests=self.backtests,
-            **self._styling(kwargs),
+            confidence=self.confidence, backtests=self.backtests, **self._styling(kwargs),
         )
 
     @property
     def backtests(self) -> dict:
-        """The test results keyed for ``build_report``'s ``backtests`` argument."""
+        """The test results keyed for ``build_report`` ``backtests`` argument."""
         return {
             "kupiec": self.kupiec,
             "dynamic_quantile": self.dynamic_quantile,
@@ -243,8 +215,7 @@ class BacktestReport:
 
         With ``sections=None`` (default) this writes the one-page dashboard. Pass
         ``sections`` (e.g. ``"all"`` or ``["breaches", "tests"]``) for a
-        selective report, which may span multiple pages. The format follows the
-        file extension. Title, subtitle, and footer are generated by default;
+        selective report. Title, subtitle, and footer are generated by default;
         override any by passing it as a keyword argument.
         """
         from varlib.plotting import save_report
@@ -265,7 +236,7 @@ def run_backtest(
     """Roll ``model`` through history and run every backtest in one call.
 
     This is the headline workflow as a single function: it rolls the model
-    (``varlib.backtest.rolling_backtest``), counts the breaches, and runs every
+    (``varlib.backtest.rolling_backtest``), and runs every
     standard test at the model's confidence level, returning a
     :class:`BacktestReport` that can print, plot, or save itself.
 

@@ -8,18 +8,11 @@ step, which is exactly what every backtest in this package consumes.
 
 Two functions, layered:
 
-* ``rolling_var``      -- series in, series of VaR forecasts out. The pure
-                          "produce a VaR for each day" helper.
+* ``rolling_var``      -- series in, series of VaR forecasts out.
 * ``rolling_backtest`` -- the same roll, but it also lines up each forecast with
                           the loss that was *actually realised* over the matching
                           holding period, returning the aligned
-                          ``(realised_losses, var_forecasts, dates)`` triple the
-                          backtests (Kupiec / DQ / traffic light) expect.
-
-Horizon alignment is the methodological heart of a multi-day backtest: the model
-already computes VaR *directly* at its horizon (see ``varlib.base``), and the
-realised loss here is the loss over the **same** number of days, so forecast and
-outcome are always on one footing -- never a 1-day VaR compared to a 10-day loss.
+                          ``(realised_losses, var_forecasts, dates)``
 """
 
 from __future__ import annotations
@@ -42,10 +35,7 @@ def rolling_var(
     Roll a VaR model through a series and return one forecast per step.
 
     At each step ``t`` (starting once a full look-back window exists) the model is
-    fitted on the trailing ``window`` returns and its forecast is recorded. The
-    forecast is read from ``result.<field>`` -- ``"value"`` for the VaR (default)
-    or ``"expected_shortfall"`` for the ES -- so the same roll produces either a
-    VaR or an ES series.
+    fitted on the trailing ``window`` returns and its forecast is recorded.
 
     Parameters
     ----------
@@ -108,9 +98,6 @@ def rolling_backtest(
       * the realised h-day loss over the next ``h`` periods. Log returns are
         additive, so the h-day loss is ``-(returns[t] + ... + returns[t+h-1])``.
 
-    The forecast and the realised loss are therefore on the **same** holding
-    period -- the alignment a multi-day backtest depends on.
-
     Parameters
     ----------
     model
@@ -127,7 +114,8 @@ def rolling_backtest(
         the overlapping observations are serially dependent (which biases the
         Dynamic Quantile independence test). ``False``
         advances ``horizon`` periods at a time, giving non-overlapping,
-        independent h-day returns -- cleaner statistics, ~1/h as many points.
+        independent h-day returns -- cleaner statistics, but smaller sample. 
+        Innacurate for large horizons and high confidence (99%+) because sample will be tiny.
     dates
         Optional labels for each underlying return. If omitted and a pandas Series
         of returns was passed, that Series' index is used; otherwise an integer

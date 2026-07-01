@@ -11,11 +11,17 @@ The OU process in discrete time is exactly an AR(1) regression:
     x_t = a + b * x_{t-1} + e_t
 
 From the fitted (a, b) and the residual volatility we recover the OU parameters
-(mean-reversion speed, long-run mean, diffusion volatility) and then read the
-one-period VaR off the *conditional* normal distribution of the next step.
+(mean-reversion speed, long-run mean, diffusion volatility) and then read the VaR
+off a *simulation*: we iterate the fitted AR(1) recursion forward `horizon` steps
+many times, sum each path into one h-day return, and take the VaR and ES of the
+simulated sample with the Historical definition -- the same estimate-by-Monte-
+Carlo pattern as the jump-diffusion model.
 
-Because the next step is conditional on where we are now, the OU VaR depends on
-the most recent observation, not just on the unconditional volatility.
+Because the path starts at the most recent observation, the OU VaR depends on
+where we are now, not just on the unconditional volatility. And because the
+simulation is the AR(1) process itself, the multi-day risk scales by the
+process's own autocorrelation (persistence amplifies it, oscillation damps it),
+not by the sqrt-of-time rule.
 """
 
 from __future__ import annotations
@@ -25,7 +31,7 @@ from typing import Any, NamedTuple
 import numpy as np
 
 from varlib.base import VarModel
-from varlib.models.parametric.brownian.brownian import normal_pdf, normal_quantile
+from varlib.models.non_parametric.historical.historical import historical_var, historical_es
 
 
 class OuParameters(NamedTuple):
@@ -48,9 +54,13 @@ class ParametricOuVar(VarModel):
         confidence: float = 0.99,
         horizon: int = 1,
         params: OuParameters | None = None,
+        n_simulations: int = 50_000,
+        seed: int = 0,
     ) -> None:
         super().__init__(confidence=confidence, horizon=horizon)
         self.params_override = params
+        self.n_simulations = int(n_simulations)
+        self.seed = int(seed)
 
     def _compute(
         self, returns: np.ndarray, steps: dict[str, Any]
@@ -59,6 +69,8 @@ class ParametricOuVar(VarModel):
             returns,
             self.confidence,
             self.params_override,
+            self.n_simulations,
+            self.seed,
             steps,
             horizon=self.horizon,
         )
@@ -68,6 +80,8 @@ def parametric_ou_var_es(
     returns: np.ndarray,
     confidence: float = 0.99,
     params: OuParameters | None = None,
+    n_simulations: int = 50_000,
+    seed: int = 0,
     steps: dict[str, Any] | None = None,
     horizon: int = 1,
 ) -> tuple[float, float]:
@@ -81,30 +95,25 @@ def parametric_ou_var_es(
 
     where each step follows the fitted AR(1)  x_k = a + b*x_{k-1} + e,  e ~ N(0, sigma^2).
     This is the quantity the backtest actually realises (the summed h-day return),
-    so the forecast and the outcome are on the same footing. Modelling only the
-    single value x_{t+h} -- the marginal h steps ahead -- would describe one day's
-    return, not the h-day holding-period loss, and would badly under-state risk.
+    so the forecast and the outcome are on the same footing.
 
-    S_h is Normal (a sum of Normals) with closed-form mean and variance:
-
-        E[S_h]   = sum_{k=1..h} ( theta + b**k * (x0 - theta) )
-        Var[S_h] = sigma**2 * sum_{j=1..h} ( (1 - b**(h-j+1)) / (1 - b) )**2
-
-    The variance expression is the sum of squared shock-loadings: shock e_j feeds
-    into every later step, contributing the geometric series (1 - b^{h-j+1})/(1-b).
-    The sign of the autocorrelation b then decides how multi-day risk accumulates:
-    a persistent series (b > 0) compounds its shocks, so Var[S_h] grows *faster*
-    than the h * sigma^2 an i.i.d. series gives; an oscillating one (b < 0) sees
-    shocks partly cancel, so it grows *slower*. Either way the sqrt-of-time rule
-    (which assumes b == 0) gets the multi-day scaling wrong. For ``horizon == 1``
-    this reduces to mean ``theta + b*(x0-theta)`` and variance ``sigma**2`` -- the
-    loss on the next single return.
+    We get the distribution of S_h by *simulation*: starting every path at the
+    last observed value x0, we iterate the AR(1) recursion forward h steps for
+    `n_simulations` paths and sum each path. The VaR and ES are then read off the
+    simulated h-day sample with the Historical definition. Because the simulated
+    paths follow the AR(1) process itself, the multi-day risk scales by the
+    process's own autocorrelation: a persistent series (b > 0) compounds its
+    shocks and is riskier than i.i.d.; an oscillating one (b < 0) partly cancels
+    and is less risky -- neither is the sqrt-of-time rule (which assumes b == 0).
+    For ``horizon == 1`` each path is a single step, the loss on the next return.
 
     Parameters
     ----------
     params
         Optional pre-calibrated OU parameters. If omitted they are estimated
         from `returns` via the AR(1) regression in `estimate_ou_parameters`.
+    n_simulations, seed
+        Number of Monte Carlo paths and the RNG seed (for reproducibility).
     """
     if steps is None:
         steps = {}
@@ -127,45 +136,27 @@ def parametric_ou_var_es(
     b, theta, sigma, x0 = (
         params.b, params.theta, params.sigma, params.last_value
     )
-    k = np.arange(1, horizon + 1)
+    # The AR(1) intercept implied by the fitted (b, theta): theta = a / (1 - b).
+    a = theta * (1.0 - b)
 
-    # Step 2: the expected cumulative return E[S_h]. Each step k reverts toward
-    # theta by b**k from the current value x0; we sum those h conditional means.
-    step_means = theta + b ** k * (x0 - theta)
-    expected_sum = float(np.sum(step_means))
-    steps["expected_sum"] = expected_sum
+    # Step 2: simulate the cumulative h-day return S_h. Start every path at x0 and
+    # iterate the AR(1) recursion x_k = a + b*x_{k-1} + e forward h steps, summing
+    # each path into one h-day return. This is just the process's own definition.
+    rng = np.random.default_rng(seed)
+    steps["seed"] = int(seed)
+    steps["n_simulations"] = int(n_simulations)
+    x = np.full(n_simulations, x0, dtype=float)
+    cumulative = np.zeros(n_simulations, dtype=float)
+    for _ in range(horizon):
+        x = a + b * x + rng.normal(0.0, sigma, size=n_simulations)
+        cumulative += x
+    steps["simulated_returns"] = cumulative
 
-    # Step 3: the variance of the cumulative sum. Shock e_j (j = 1..h) loads onto
-    # steps j..h with weights b**0, b**1, ..., b**(h-j), summing to the geometric
-    # series (1 - b**(h-j+1))/(1-b). The total variance is sigma^2 times the sum
-    # of the squared loadings. (When b -> 1 this tends to sigma^2 * sum(k^2)-style
-    # growth; for |b| < 1 reversion damps it below h*sigma^2.)
-    if abs(1.0 - b) < 1e-12:
-        loadings = np.full(horizon, float(horizon))      # b -> 1 limit
-    else:
-        j = np.arange(1, horizon + 1)
-        loadings = (1.0 - b ** (horizon - j + 1)) / (1.0 - b)
-    variance_sum = float(sigma * sigma * np.sum(loadings * loadings))
-    sigma_sum = float(np.sqrt(variance_sum))
-    steps["sigma_sum"] = sigma_sum
-
-    # Step 4: left-tail standard-normal quantile at (1 - confidence).
-    tail_probability = 1.0 - confidence
-    z = normal_quantile(tail_probability)
-    steps["z_score"] = z
-
-    # Step 5: the cumulative return at the tail; VaR is the loss (its negative).
-    return_at_quantile = expected_sum + z * sigma_sum
-    steps["return_at_quantile"] = float(return_at_quantile)
-    var = float(-return_at_quantile)
+    # Step 3: VaR and ES off the simulated sample, via the Historical definition
+    # (VaR = loss quantile, ES = average loss beyond it) -- same as every model.
+    var = historical_var(cumulative, confidence)
     steps["var"] = var
-
-    # Step 6: ES is the Gaussian tail-average loss of the cumulative return.
-    # Mean cumulative return in the tail is E[S_h] - sigma_sum * pdf(z) / tail,
-    # so the average loss (its negative) is below.
-    pdf_z = normal_pdf(z)
-    steps["pdf_z"] = pdf_z
-    es = float(-expected_sum + sigma_sum * pdf_z / tail_probability)
+    es = historical_es(cumulative, confidence, var)
     steps["es"] = es
 
     return var, es
@@ -175,11 +166,15 @@ def parametric_ou_var(
     returns: np.ndarray,
     confidence: float = 0.99,
     params: OuParameters | None = None,
+    n_simulations: int = 50_000,
+    seed: int = 0,
     steps: dict[str, Any] | None = None,
     horizon: int = 1,
 ) -> float:
     """Convenience wrapper returning only the OU VaR."""
-    var, _ = parametric_ou_var_es(returns, confidence, params, steps, horizon)
+    var, _ = parametric_ou_var_es(
+        returns, confidence, params, n_simulations, seed, steps, horizon
+    )
     return var
 
 
