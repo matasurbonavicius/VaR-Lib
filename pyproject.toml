@@ -27,6 +27,11 @@ classifiers = [
 ]
 dependencies = ["numpy>=1.20", "pandas>=1.2", "scipy>=1.7", "matplotlib>=3.4", "pytest>=7.0"]
 
+[project.optional-dependencies]
+# Filtered Historical Simulation needs a GARCH filter. `arch` (and its
+# statsmodels dependency) is heavy, so it is opt-in: `pip install varlib[fhs]`.
+fhs = ["arch>=6.0"]
+
 [project.urls]
 Homepage = "https://github.com/matasurbonavicius/VaR-Lib"
 Repository = "https://github.com/matasurbonavicius/VaR-Lib"

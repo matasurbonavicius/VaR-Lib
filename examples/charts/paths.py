@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from varlib.base import var_es_from_returns
-from varlib.models.parametric.jump.jump import estimate_jump_parameters, _sum_jumps
+from varlib.models.parametric.jump import estimate_jump_parameters, _sum_jumps
 from varlib.plotting import paths_chart
 
 HERE = os.path.dirname(os.path.dirname(__file__))

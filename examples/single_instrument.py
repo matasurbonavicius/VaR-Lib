@@ -29,6 +29,7 @@ from varlib import (
     ParametricOuVar,
     ParametricJumpVar,
     EwmaVar,
+    FilteredHistoricalSimulationVar,
     run_backtest,
 )
 
@@ -58,12 +59,13 @@ def main():
         "Parametric OU": ParametricOuVar(CONFIDENCE),
         "Parametric jump": ParametricJumpVar(CONFIDENCE, n_simulations=20_000),
         "EWMA / RiskMetrics": EwmaVar(CONFIDENCE),
+        "Filtered historical (FHS)": FilteredHistoricalSimulationVar(CONFIDENCE),
     }
     recent_returns = np.diff(np.log(recent.to_numpy()))
-    print(f"  {'Model':24s}  {'VaR':>8s}  {'ES':>8s}")
+    print(f"  {'Model':26s}  {'VaR':>8s}  {'ES':>8s}")
     for name, model in models.items():
         result = model.run(recent_returns)
-        print(f"  {name:24s}  {result.value * 100:7.3f}%  "
+        print(f"  {name:26s}  {result.value * 100:7.3f}%  "
               f"{result.expected_shortfall * 100:7.3f}%")
 
     # ---- Backtest the Historical model over the full five-year history ------

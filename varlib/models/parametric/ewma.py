@@ -64,7 +64,7 @@ from typing import Any
 import numpy as np
 
 from varlib.base import VarModel
-from varlib.models.parametric.brownian.brownian import normal_pdf, normal_quantile
+from varlib.models.parametric.brownian import normal_pdf, normal_quantile
 
 
 class EwmaVar(VarModel):

@@ -58,6 +58,11 @@ from varlib.models.parametric.ewma import (
     ewma_var,
     ewma_var_es,
 )
+from varlib.models.semi_parametric.filtered_historical_simulation import (
+    FilteredHistoricalSimulationVar,
+    filtered_historical_simulation_var,
+    filtered_historical_simulation_var_es,
+)
 
 __all__ = [
     "VarModel",
@@ -83,6 +88,9 @@ __all__ = [
     "EwmaVar",
     "ewma_var",
     "ewma_var_es",
+    "FilteredHistoricalSimulationVar",
+    "filtered_historical_simulation_var",
+    "filtered_historical_simulation_var_es",
 ]
 
 __version__ = "0.1.0"

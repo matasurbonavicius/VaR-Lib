@@ -1,6 +1,6 @@
 # VaR-Lib - Value-at-risk focused lightweight library
 
-*Six VaR models · ES on every one · three backtests ·
+*Eight VaR models · ES on every one · three backtests ·
 one-call reports.*
 
 A small Value at Risk library built on three ideas:
@@ -25,13 +25,15 @@ The same data, every model (`examples/single_instrument.py`):
 ```
 VaR and ES estimated on 2023-01-03 .. 2024-12-31 (502 days):
 
-  Model                          VaR        ES
-  Historical                  2.969%    4.048%
-  Historical bootstrap        3.227%    3.908%
-  Parametric Brownian         3.006%    3.465%
-  Parametric OU               3.060%    3.519%
-  Parametric jump             2.936%    4.509%
-  EWMA                        2.308%    2.664%
+  Model                            VaR        ES
+  Historical                    2.969%    4.048%
+  Age-weighted historical       2.910%    3.463%
+  Historical bootstrap          3.227%    3.908%
+  Parametric Brownian           3.006%    3.465%
+  Parametric OU                 3.060%    3.519%
+  Parametric jump               2.936%    4.509%
+  EWMA / RiskMetrics            2.308%    2.664%
+  Filtered historical (FHS)     3.678%    4.190%
 
 Backtest: rolling Historical VaR, full 2020-2024 history  (confidence = 99%)
   Observations    : 1007
@@ -54,6 +56,16 @@ distributions behind the Kupiec, Dynamic Quantile, and Basel traffic-light
 backtests. It is a relatively heavy dependency (a large, compiled package),
 pulled in for convenience and correctness over reimplementing these functions
 by hand.
+
+Filtered Historical Simulation needs a GARCH filter, supplied by the
+[`arch`](https://pypi.org/project/arch/) package. It (and its statsmodels
+dependency) is heavy, so it is kept optional — install it only if you want FHS:
+
+```bash
+pip install -e ".[fhs]"
+```
+
+Every other model works without it.
 
 ## Quick start
 
@@ -98,17 +110,20 @@ you pass data, not styling. That is all the examples do: load data, call
 
 ## The models
 
-Each lives in its own folder under `varlib/models/`, grouped into `parametric/`
-and `non_parametric/`:
+Each lives under `varlib/models/`, grouped by how much they assume — from
+`non_parametric/` (assume nothing) through `semi_parametric/` (empirical shocks,
+parametric dynamics) to `parametric/` (assume a full distribution):
 
-| Model                    | Assumes                                              |
-|--------------------------|------------------------------------------------------|
-| `HistoricalVar`          | Nothing — empirical quantile of past losses.         |
-| `HistoricalBootstrapVar` | Future = a reshuffle of the past; gives a std error. |
-| `ParametricBrownianVar`  | Returns are Normal (variance-covariance / Gaussian). |
-| `ParametricOuVar`        | Returns mean-revert (Ornstein–Uhlenbeck / AR(1)).    |
-| `ParametricJumpVar`      | Normal diffusion **plus** rare Merton jumps (fat tails). |
-| `EwmaVar`                | EWMA volatility (RiskMetrics λ=0.94); reacts to clustering. |
+| Model                              | Family          | Assumes                                              |
+|------------------------------------|-----------------|------------------------------------------------------|
+| `HistoricalVar`                    | non-parametric  | Nothing — empirical quantile of past losses.         |
+| `AgeWeightedHistoricalVar`         | non-parametric  | As Historical, but recent days count more (BRW).     |
+| `HistoricalBootstrapVar`           | non-parametric  | Future = a reshuffle of the past; gives a std error. |
+| `FilteredHistoricalSimulationVar`  | semi-parametric | GARCH filter + bootstrap real shocks at today's vol (BGV). |
+| `ParametricBrownianVar`            | parametric      | Returns are Normal (variance-covariance / Gaussian). |
+| `ParametricOuVar`                  | parametric      | Returns mean-revert (Ornstein–Uhlenbeck / AR(1)).    |
+| `ParametricJumpVar`                | parametric      | Normal diffusion **plus** rare Merton jumps (fat tails). |
+| `EwmaVar`                          | parametric      | EWMA volatility (RiskMetrics λ=0.94); reacts to clustering. |
 
 All take `confidence` and `horizon`, run on a `returns` series (compute log
 returns from prices yourself, e.g. `np.diff(np.log(prices))`), and

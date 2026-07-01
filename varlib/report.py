@@ -48,6 +48,7 @@ _MODEL_LABELS = {
     "ParametricOuVar": "Parametric OU",
     "ParametricJumpVar": "Parametric jump",
     "EwmaVar": "EWMA / RiskMetrics",
+    "FilteredHistoricalSimulationVar": "Filtered historical simulation",
 }
 
 
